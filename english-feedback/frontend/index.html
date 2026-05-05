@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English Trainer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="hero-panel">
+      <div>
+        <p class="eyebrow">English Trainer</p>
+        <h1>Objective feedback for writing and speaking.</h1>
+        <p class="hero-copy">Train with text or audio, store corrections securely, and review flashcards and study reports from one place.</p>
+      </div>
+      <div class="hero-stats">
+        <div><span>Provider</span><strong id="providerBadge">OpenAI</strong></div>
+        <div><span>Flashcards</span><strong id="flashcardCount">0</strong></div>
+        <div><span>Study days</span><strong id="studyDayCount">0</strong></div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">AI training workspace</p>
+          <h2>Tabs</h2>
+        </div>
+        <div class="pill" id="saveStatus">Ready</div>
+      </header>
+
+      <nav class="tabs" aria-label="Main sections">
+        <button class="tab active" data-tab="training">Training</button>
+        <button class="tab" data-tab="flashcards">Flashcards</button>
+        <button class="tab" data-tab="config">Config</button>
+        <button class="tab" data-tab="report">Report</button>
+      </nav>
+
+      <section class="panel active" id="trainingPanel">
+        <div class="grid-two">
+          <label class="field">
+            <span>Title</span>
+            <input id="trainingTitle" type="text" placeholder="Lesson, topic, or activity title" />
+          </label>
+
+          <div class="field">
+            <span>Input mode</span>
+            <div class="mode-toggle">
+              <button class="toggle active" id="textModeBtn" type="button">Text Mode</button>
+              <button class="toggle" id="audioModeBtn" type="button">Audio Mode</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mode-body">
+          <label class="field" id="textInputWrap">
+            <span>Text</span>
+            <textarea id="trainingText" rows="10" placeholder="Write your text here..."></textarea>
+          </label>
+
+          <div class="field hidden" id="audioInputWrap">
+            <span>Audio</span>
+            <div class="audio-box">
+              <button class="primary" id="recordBtn" type="button">Start recording</button>
+              <audio id="audioPreview" controls class="hidden"></audio>
+              <p class="hint">Audio is compressed in the backend before transcription.</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="primary submit-btn" id="submitTrainingBtn" type="button">Submit</button>
+
+        <div class="result-block">
+          <div class="section-head">
+            <h3>Submitted content</h3>
+            <span class="hint">Non selectable</span>
+          </div>
+          <div id="sourcePreview" class="source-preview" aria-readonly="true">No content submitted yet.</div>
+        </div>
+
+        <div class="result-block">
+          <div class="section-head">
+            <h3>Result</h3>
+            <span class="hint">Read only</span>
+          </div>
+          <div id="resultOutput" class="markdown-output"></div>
+        </div>
+      </section>
+
+      <section class="panel" id="flashcardsPanel">
+        <div class="section-head">
+          <h3>Flashcards</h3>
+          <div class="inline-controls">
+            <select id="flashcardHashtagFilter">
+              <option value="">All hashtags</option>
+            </select>
+            <button class="secondary" id="reviewModeBtn" type="button">Enter review mode</button>
+          </div>
+        </div>
+        <div class="flashcard-grid" id="flashcardGrid"></div>
+      </section>
+
+      <section class="panel" id="configPanel">
+        <div class="section-head">
+          <h3>Config</h3>
+        </div>
+        <div class="grid-two">
+          <label class="field">
+            <span>Provider</span>
+            <select id="providerSelect">
+              <option value="openai">OpenAI</option>
+              <option value="claude">Claude</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>API key</span>
+            <input id="apiKeyInput" type="password" placeholder="Stored server-side" />
+          </label>
+        </div>
+        <button class="primary" id="saveConfigBtn" type="button">Save config</button>
+      </section>
+
+      <section class="panel" id="reportPanel">
+        <div class="section-head">
+          <h3>Report</h3>
+          <div class="inline-controls">
+            <select id="reportHashtagFilter">
+              <option value="">All hashtags</option>
+            </select>
+            <input id="reportTitleFilter" type="text" placeholder="Filter by topic/title" />
+          </div>
+        </div>
+
+        <div class="report-layout">
+          <div class="calendar-card">
+            <div class="calendar-header">
+              <button class="secondary compact" id="prevMonthBtn" type="button">Prev</button>
+              <strong id="calendarLabel"></strong>
+              <button class="secondary compact" id="nextMonthBtn" type="button">Next</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </div>
+
+          <div class="analytics-card">
+            <h4>Analytics</h4>
+            <div class="analytics-list" id="analyticsList"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <div id="daySessionsModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <strong id="modalDateLabel">Sessions</strong>
+        <button id="modalCloseBtn" class="secondary compact">Close</button>
+      </div>
+      <div id="modalContent" class="modal-content"></div>
+    </div>
+  </div>
+</body>
+</html>

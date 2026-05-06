@@ -185,7 +185,7 @@
           <div class="analytics-card">
             <h4>Analytics</h4>
             <div class="analytics-list" id="analyticsList"></div>
-            <canvas id="reportChart" width="600" height="200" style="width:100%;height:160px;margin-top:12px;border-radius:8px;background:rgba(5,8,7,0.95);display:block"></canvas>
+            <div id="reportPlot" style="width:100%;height:200px;margin-top:12px;border-radius:8px;background:rgba(5,8,7,0.95);display:block"></div>
           </div>
         </div>
 
@@ -194,6 +194,7 @@
     </main>
   </div>
 
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="app.js"></script>
   <div id="daySessionsModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-backdrop" id="modalBackdrop"></div>

@@ -369,7 +369,6 @@ const renderReport = (report) => {
   const analytics = report.analytics || {};
   el('analyticsList').innerHTML = [
     ['Study streak', analytics.study_streak ?? 0],
-    ['Most common errors', (analytics.most_common_errors || []).map((item) => `${item.label} (${item.count})`).join(', ') || 'None'],
     ['Most used hashtags', (analytics.most_used_hashtags || []).map((item) => `${item.label} (${item.count})`).join(', ') || 'None'],
     ['Sessions per task', (analytics.sessions_per_task || []).map((item) => `${item.label} (${item.count})`).join(', ') || 'None'],
     ['Spoken minutes', formatMinutes(analytics.spoken_minutes ?? 0)],
@@ -437,6 +436,57 @@ const renderReportChart = (items) => {
   });
 };
 
+const renderReportPlotly = (items) => {
+  const plotEl = document.getElementById('reportPlot');
+  if (!plotEl) return;
+  const data = (items || []).slice(0, 10);
+  if (!data.length) {
+    plotEl.innerHTML = '<div class="source-preview">No data to display.</div>';
+    return;
+  }
+
+  const x = data.map((d) => d.label);
+  const y = data.map((d) => d.count);
+  const neonColor = 'rgba(32,217,127,0.95)';
+  const trace = {
+    x,
+    y,
+    type: 'bar',
+    marker: {
+      color: neonColor,
+      line: { color: 'rgba(255,255,255,0.06)', width: 1 },
+      // opacity kept high for neon vibrance
+      opacity: 0.95,
+    },
+    hoverinfo: 'x+y',
+  };
+
+  const layout = {
+    margin: { t: 10, r: 10, l: 36, b: 80 },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { color: '#aee' },
+    xaxis: { tickangle: -35, automargin: true },
+    yaxis: { automargin: true },
+    bargap: 0.78, // large gap to make bars visually thin
+    // set a subtle glow effect via shapes (browser support varies)
+  };
+
+  const config = { responsive: true, displayModeBar: false, staticPlot: false };
+
+  if (window.Plotly && window.Plotly.react) {
+    try {
+      window.Plotly.react(plotEl, [trace], layout, config);
+    } catch (err) {
+      // fallback to simple canvas chart
+      renderReportChart(items);
+    }
+  } else {
+    // Plotly not loaded — fallback
+    renderReportChart(items);
+  }
+};
+
 const refreshData = async () => {
   const reportTaskFilter = el('reportTaskFilter').value;
   const reportHashtagFilter = el('reportHashtagFilter').value;
@@ -465,7 +515,7 @@ const refreshData = async () => {
   renderReport(report);
   renderTasks();
   renderFlashcards();
-  renderReportChart(report.analytics?.sessions_per_task || []);
+  renderReportPlotly(report.analytics?.sessions_per_task || []);
   el('flashcardCount').textContent = String(state.flashcards.length);
 };
 

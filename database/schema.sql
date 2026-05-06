@@ -11,15 +11,24 @@ CREATE TABLE IF NOT EXISTS hashtags (
     name VARCHAR(80) UNIQUE NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tasks (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE RESTRICT,
     title VARCHAR(255) NOT NULL,
     input_mode VARCHAR(16) NOT NULL,
     original_content TEXT NOT NULL,
     ai_response JSONB NOT NULL,
     transcript TEXT,
     provider VARCHAR(32) NOT NULL,
+    audio_duration_seconds INTEGER,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

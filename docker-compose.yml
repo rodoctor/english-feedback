@@ -1,12 +1,14 @@
+name: english-feedback
+
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-english_trainer}
-      POSTGRES_USER: ${POSTGRES_USER:-english_trainer}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-english_trainer}
+      POSTGRES_DB: ${POSTGRES_DB:-english_feedback}
+      POSTGRES_USER: ${POSTGRES_USER:-english_feedback}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-english_feedback}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -15,7 +17,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://english_trainer:english_trainer@postgres:5432/english_trainer}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://english_feedback:english_feedback@postgres:5432/english_feedback}
       APP_SECRET_KEY: ${APP_SECRET_KEY:-change-me-in-production}
       AI_DEFAULT_PROVIDER: ${AI_DEFAULT_PROVIDER:-openai}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -24,6 +26,8 @@ services:
       - postgres
     ports:
       - "8000:8000"
+    volumes:
+      - backend_uploads:/app/app/static/uploads
 
   frontend:
     build:
@@ -36,3 +40,6 @@ services:
 
 volumes:
   postgres_data:
+    name: english-feedback_postgres_data
+  backend_uploads:
+    name: english-feedback_backend_uploads

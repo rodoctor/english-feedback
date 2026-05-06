@@ -22,6 +22,8 @@ def read_flashcards(hashtag: str | None = Query(default=None), db: Session = Dep
             front=card.front,
             back=card.back,
             hashtags=[f"#{hashtag.name}" for hashtag in card.hashtags],
+            task_id=card.session.task_id if card.session else None,
+            task_title=card.session.task.title if card.session and card.session.task else None,
             created_at=card.created_at,
         )
         for card in flashcards

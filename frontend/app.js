@@ -5,8 +5,11 @@ const state = {
   audioBlob: null,
   flashcards: [],
   hashtags: [],
+  tasks: [],
+  taskGroups: [],
   reportMonth: new Date(),
   reviewMode: false,
+  editingTaskId: null,
 };
 
 const api = async (path, options = {}) => {
@@ -25,6 +28,71 @@ const el = (id) => document.getElementById(id);
 
 const setStatus = (text) => {
   el('saveStatus').textContent = text;
+};
+
+const clearFieldErrors = (fieldIds) => {
+  fieldIds.forEach((id) => {
+    const elem = el(id);
+    if (!elem) return;
+    elem.classList.remove('input-error');
+    const errorMsg = elem.parentElement?.querySelector('.error-message');
+    if (errorMsg) errorMsg.remove();
+  });
+};
+
+const showFieldError = (elementId, message) => {
+  const elem = el(elementId);
+  if (!elem) return;
+  elem.classList.add('input-error');
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'error-message';
+  errorDiv.textContent = message;
+  elem.parentElement.appendChild(errorDiv);
+};
+
+const validateTaskForm = () => {
+  const titleId = 'taskTitleInput';
+  clearFieldErrors([titleId]);
+  const title = el(titleId).value.trim();
+  if (!title) {
+    showFieldError(titleId, 'Task title is required');
+    return false;
+  }
+  return true;
+};
+
+const validatePracticeForm = () => {
+  const titleId = 'trainingTitle';
+  const taskId = 'practiceTaskSelect';
+  const textId = 'trainingText';
+  clearFieldErrors([titleId, taskId, textId]);
+
+  const title = el(titleId).value.trim();
+  if (!title) {
+    showFieldError(titleId, 'Title is required');
+    return false;
+  }
+
+  const selectedTask = el(taskId).value;
+  if (!selectedTask) {
+    showFieldError(taskId, 'Please select a task');
+    return false;
+  }
+
+  if (state.mode === 'text') {
+    const text = el(textId).value.trim();
+    if (!text) {
+      showFieldError(textId, 'Please enter text');
+      return false;
+    }
+  } else {
+    if (!state.audioBlob) {
+      setStatus('Please record audio before submitting');
+      return false;
+    }
+  }
+
+  return true;
 };
 
 const switchTab = (tabName) => {
@@ -47,6 +115,8 @@ const escapeHtml = (text) => text
   .replaceAll('>', '&gt;')
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#039;');
+
+const formatMinutes = (minutes) => `${Number(minutes || 0).toFixed(1)} min`;
 
 const renderInlineMarkdown = (text) => escapeHtml(text)
   .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -113,10 +183,121 @@ const refreshHashtagFilters = () => {
   });
 };
 
+const refreshFlashcardFilters = () => {
+  const taskFilter = el('flashcardTaskFilter');
+  const current = taskFilter.value;
+  taskFilter.innerHTML = '<option value="">All tasks</option>' + state.tasks.map((task) => `<option value="${task.id}">${escapeHtml(task.title)}</option>`).join('');
+  taskFilter.value = current;
+};
+
+const renderTaskOptions = () => {
+  const practiceSelect = el('practiceTaskSelect');
+  const reportSelect = el('reportTaskFilter');
+  const currentPractice = practiceSelect.value;
+  const currentReport = reportSelect.value;
+
+  const options = state.tasks.map((task) => `<option value="${task.id}">${escapeHtml(task.title)}</option>`).join('');
+  practiceSelect.innerHTML = state.tasks.length
+    ? `<option value="">Select a task</option>${options}`
+    : '<option value="">Create a task first</option>';
+  reportSelect.innerHTML = `<option value="">All tasks</option>${options}`;
+
+  practiceSelect.value = state.tasks.some((task) => String(task.id) === currentPractice) ? currentPractice : '';
+  reportSelect.value = state.tasks.some((task) => String(task.id) === currentReport) ? currentReport : '';
+  el('submitTrainingBtn').disabled = !state.tasks.length;
+};
+
+const resetTaskForm = () => {
+  state.editingTaskId = null;
+  el('taskTitleInput').value = '';
+  el('taskDescriptionInput').value = '';
+  el('taskSubmitBtn').textContent = 'Add Task';
+  el('taskCancelBtn').classList.add('hidden');
+};
+
+const renderTasks = () => {
+  const container = el('tasksList');
+  if (!state.tasks.length) {
+    container.innerHTML = '<div class="source-preview">No tasks yet. Add one to start practicing.</div>';
+    return;
+  }
+
+  container.innerHTML = state.tasks.map((task) => `
+    <article class="task-card">
+      <div class="task-card-head">
+        <div>
+          <strong>${escapeHtml(task.title)}</strong>
+          <p>${escapeHtml(task.description || 'No description')}</p>
+        </div>
+        <span class="chip">${new Date(task.created_at).toLocaleDateString()}</span>
+      </div>
+      <div class="task-badges">
+        <div class="dots text-dots" data-text-for="${task.id}"></div>
+        <div class="dots audio-dots" data-audio-for="${task.id}"></div>
+        <div class="flame" data-flame-for="${task.id}">🔥 <span class="count">0</span></div>
+      </div>
+      <div class="task-duration" data-duration-for="${task.id}">0.0 min falados</div>
+      <div class="task-card-actions">
+        <button class="secondary compact" data-task-edit="${task.id}" type="button">Edit</button>
+        <button class="secondary compact" data-task-delete="${task.id}" type="button">Delete</button>
+      </div>
+    </article>
+  `).join('');
+
+  container.querySelectorAll('[data-task-edit]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const task = state.tasks.find((item) => String(item.id) === button.getAttribute('data-task-edit'));
+      if (!task) return;
+      state.editingTaskId = task.id;
+      el('taskTitleInput').value = task.title;
+      el('taskDescriptionInput').value = task.description || '';
+      el('taskSubmitBtn').textContent = 'Update Task';
+      el('taskCancelBtn').classList.remove('hidden');
+    });
+  });
+
+  container.querySelectorAll('[data-task-delete]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const taskId = button.getAttribute('data-task-delete');
+      if (!taskId || !window.confirm('Delete this task?')) return;
+      await api(`/tasks/${taskId}`, { method: 'DELETE' });
+      resetTaskForm();
+      await refreshData();
+    });
+  });
+
+  // populate dots and flame counts from latest report groups
+  state.taskGroups.forEach((group) => {
+    const textContainer = document.querySelector(`[data-text-for="${group.task_id}"]`);
+    const audioContainer = document.querySelector(`[data-audio-for="${group.task_id}"]`);
+    const flameEl = document.querySelector(`[data-flame-for="${group.task_id}"] .count`);
+    const durationEl = document.querySelector(`[data-duration-for="${group.task_id}"]`);
+    if (textContainer) {
+      textContainer.innerHTML = (new Array(group.text_count || 0)).fill('<span class="dot text-dot"></span>').join('');
+    }
+    if (audioContainer) {
+      audioContainer.innerHTML = (new Array(group.audio_count || 0)).fill('<span class="dot audio-dot"></span>').join('');
+    }
+    if (flameEl) {
+      flameEl.textContent = String(group.study_days_count || 0);
+    }
+    if (durationEl) {
+      durationEl.textContent = `${formatMinutes(group.spoken_minutes)} falados`;
+    }
+  });
+};
+
 const renderFlashcards = () => {
   const container = el('flashcardGrid');
-  const filter = el('flashcardHashtagFilter').value;
-  const items = filter ? state.flashcards.filter((flashcard) => (flashcard.hashtags || []).includes(filter)) : state.flashcards;
+  const hashtagFilter = el('flashcardHashtagFilter').value;
+  const taskFilter = el('flashcardTaskFilter').value;
+  let items = state.flashcards;
+  if (taskFilter) {
+    items = items.filter((flashcard) => String(flashcard.task_id) === taskFilter);
+  }
+  if (hashtagFilter) {
+    items = items.filter((flashcard) => (flashcard.hashtags || []).includes(hashtagFilter));
+  }
 
   if (!items.length) {
     container.innerHTML = '<div class="source-preview">No flashcards yet.</div>';
@@ -190,26 +371,101 @@ const renderReport = (report) => {
     ['Study streak', analytics.study_streak ?? 0],
     ['Most common errors', (analytics.most_common_errors || []).map((item) => `${item.label} (${item.count})`).join(', ') || 'None'],
     ['Most used hashtags', (analytics.most_used_hashtags || []).map((item) => `${item.label} (${item.count})`).join(', ') || 'None'],
+    ['Sessions per task', (analytics.sessions_per_task || []).map((item) => `${item.label} (${item.count})`).join(', ') || 'None'],
+    ['Spoken minutes', formatMinutes(analytics.spoken_minutes ?? 0)],
+    ['Most active task', analytics.most_active_task ? `${analytics.most_active_task.label} (${analytics.most_active_task.count})` : 'None'],
   ].map(([labelText, value]) => `<div class="analytics-item"><span>${labelText}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('');
 
   el('studyDayCount').textContent = String(report.calendar?.study_days || 0);
+
+  const taskGroups = report.tasks || [];
+  state.taskGroups = taskGroups;
+  const groupsContainer = el('reportTaskGroups');
+  groupsContainer.innerHTML = taskGroups.length ? taskGroups.map((group) => `
+    <article class="report-task-card">
+      <div class="report-task-head">
+        <div>
+          <strong>${escapeHtml(group.title)}</strong>
+          <p>${escapeHtml(group.description || 'No description')}</p>
+        </div>
+        <span class="chip">${group.session_count} sessions</span>
+      </div>
+      <div class="report-task-meta">
+        <span>Activity dates: ${escapeHtml((group.activity_dates || []).join(', ') || 'None')}</span>
+        <span>Spoken time: ${escapeHtml(formatMinutes(group.spoken_minutes))}</span>
+      </div>
+      <div class="report-task-columns">
+        <div>
+          <h4>Notes / texts</h4>
+          ${(group.notes_texts || []).length ? `<ul>${group.notes_texts.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p class="hint">No notes yet.</p>'}
+        </div>
+        <div>
+          <h4>Audios</h4>
+          ${(group.audios || []).length ? `<ul>${group.audios.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : '<p class="hint">No audio sessions yet.</p>'}
+        </div>
+      </div>
+    </article>
+  `).join('') : '<div class="source-preview">No practice data yet.</div>';
+};
+
+const renderReportChart = (items) => {
+  const canvas = document.getElementById('reportChart');
+  if (!canvas || !items) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.clientWidth * devicePixelRatio;
+  const h = canvas.height = canvas.clientHeight * devicePixelRatio;
+  ctx.clearRect(0,0,w,h);
+  const data = items.slice(0,8);
+  if (!data.length) return;
+  const max = Math.max(...data.map(i => i.count));
+  const padding = 20 * devicePixelRatio;
+  const barWidth = (w - padding*2) / data.length * 0.7;
+  data.forEach((item, idx) => {
+    const x = padding + idx * ((w - padding*2) / data.length) + ((w - padding*2)/data.length - barWidth)/2;
+    const barH = (h - padding*2) * (item.count / (max || 1));
+    const y = h - padding - barH;
+    // bar
+    ctx.fillStyle = 'rgba(32,217,127,0.9)';
+    ctx.fillRect(x, y, barWidth, barH);
+    // label
+    ctx.fillStyle = '#aee';
+    ctx.font = `${12 * devicePixelRatio}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(item.label, x + barWidth/2, h - padding + 14 * devicePixelRatio);
+    // value
+    ctx.fillText(String(item.count), x + barWidth/2, y - 6 * devicePixelRatio);
+  });
 };
 
 const refreshData = async () => {
-  const [config, flashcards, report] = await Promise.all([
+  const reportTaskFilter = el('reportTaskFilter').value;
+  const reportHashtagFilter = el('reportHashtagFilter').value;
+  const reportTitleFilter = el('reportTitleFilter').value;
+  const reportQuery = new URLSearchParams({ month: state.reportMonth.toISOString().slice(0, 7) });
+  if (reportTaskFilter) reportQuery.set('task_id', reportTaskFilter);
+  if (reportHashtagFilter) reportQuery.set('hashtag', reportHashtagFilter);
+  if (reportTitleFilter) reportQuery.set('topic', reportTitleFilter);
+
+  const [config, flashcards, report, tasks] = await Promise.all([
     api('/config'),
     api('/flashcards'),
-    api(`/report?month=${state.reportMonth.toISOString().slice(0, 7)}&hashtag=${encodeURIComponent(el('reportHashtagFilter').value)}&topic=${encodeURIComponent(el('reportTitleFilter').value)}`),
+    api(`/report?${reportQuery.toString()}`),
+    api('/tasks'),
   ]);
 
   el('providerBadge').textContent = config.provider || 'OpenAI';
   el('providerSelect').value = config.provider || 'openai';
 
   state.flashcards = flashcards.items || [];
+  state.tasks = tasks.items || [];
   state.hashtags = uniqueHashtags([...(flashcards.hashtags || []), ...(report.hashtags || [])]);
   refreshHashtagFilters();
-  renderFlashcards();
+  renderTaskOptions();
+  refreshFlashcardFilters();
   renderReport(report);
+  renderTasks();
+  renderFlashcards();
+  renderReportChart(report.analytics?.sessions_per_task || []);
   el('flashcardCount').textContent = String(state.flashcards.length);
 };
 
@@ -230,7 +486,14 @@ const openDaySessionsModal = async (date) => {
   backdrop.onclick = () => closeDaySessionsModal();
 
   try {
-    const items = await api(`/report/sessions?date=${encodeURIComponent(date)}`);
+    const params = new URLSearchParams({ date });
+    const taskId = el('reportTaskFilter').value;
+    const hashtag = el('reportHashtagFilter').value;
+    const topic = el('reportTitleFilter').value;
+    if (taskId) params.set('task_id', taskId);
+    if (hashtag) params.set('hashtag', hashtag);
+    if (topic) params.set('topic', topic);
+    const items = await api(`/report/sessions?${params.toString()}`);
     if (!items.length) {
       content.innerHTML = '<div class="source-preview">No sessions found for this date.</div>';
       return;
@@ -238,7 +501,7 @@ const openDaySessionsModal = async (date) => {
 
     content.innerHTML = items.map((s) => {
       const timeLabel = new Date(s.created_at).toLocaleTimeString();
-      const summary = `${escapeHtml(s.title)} · ${escapeHtml(timeLabel)} · ${escapeHtml(s.input_mode)}`;
+      const summary = `${escapeHtml(s.title)} · ${escapeHtml(timeLabel)} · ${escapeHtml(s.input_mode)}${s.task_title ? ` · ${escapeHtml(s.task_title)}` : ''}`;
       return `
         <details class="session-item">
           <summary class="session-summary">
@@ -290,28 +553,73 @@ const stopRecording = () => {
 };
 
 const submitTraining = async () => {
-  const title = el('trainingTitle').value.trim();
-  if (!title) throw new Error('Title is required');
+  if (!validatePracticeForm()) return;
 
+  const title = el('trainingTitle').value.trim();
+  const taskId = el('practiceTaskSelect').value;
   const formData = new FormData();
   formData.append('title', title);
   formData.append('input_mode', state.mode);
+  formData.append('task_id', taskId);
 
   if (state.mode === 'text') {
     const text = el('trainingText').value.trim();
-    if (!text) throw new Error('Text is required');
     formData.append('text', text);
   } else {
-    if (!state.audioBlob) throw new Error('Record audio before submitting');
     formData.append('audio', state.audioBlob, 'recording.webm');
   }
 
   setStatus('Processing');
-  const result = await api('/trainings', { method: 'POST', body: formData });
-  el('resultOutput').innerHTML = renderMarkdown(result.markdown_response || '## Result\n- No content');
-  el('sourcePreview').textContent = result.transcript || result.original_content || 'No content submitted yet.';
-  setStatus('Saved');
-  await refreshData();
+  // lock UI to prevent duplicate submits
+  el('submitTrainingBtn').disabled = true;
+  el('submitTrainingBtn').textContent = 'Processing...';
+  el('recordBtn').disabled = true;
+  el('trainingTitle').disabled = true;
+  el('trainingText').disabled = true;
+  el('practiceTaskSelect').disabled = true;
+  el('textModeBtn').disabled = true;
+  el('audioModeBtn').disabled = true;
+
+  try {
+    const result = await api('/analyze', { method: 'POST', body: formData });
+    el('resultOutput').innerHTML = renderMarkdown(result.markdown_response || '## Result\n- No content');
+    setStatus('Saved');
+    // show New button and hide submit until user resets
+    el('newPracticeBtn').classList.remove('hidden');
+    el('submitTrainingBtn').classList.add('hidden');
+    await refreshData();
+  } catch (error) {
+    setStatus(error.message);
+    // Re-enable UI on error
+    el('submitTrainingBtn').disabled = false;
+    el('submitTrainingBtn').textContent = 'Submit';
+    el('recordBtn').disabled = false;
+    el('trainingTitle').disabled = false;
+    el('trainingText').disabled = false;
+    el('practiceTaskSelect').disabled = false;
+    el('textModeBtn').disabled = false;
+    el('audioModeBtn').disabled = false;
+  }
+};
+
+const submitTask = async () => {
+  if (!validateTaskForm()) return;
+
+  const title = el('taskTitleInput').value.trim();
+  const description = el('taskDescriptionInput').value.trim();
+  const payload = { title, description: description || null };
+  const editing = state.editingTaskId !== null;
+  const path = editing ? `/tasks/${state.editingTaskId}` : '/tasks';
+  const method = editing ? 'PUT' : 'POST';
+
+  try {
+    await api(path, { method, body: JSON.stringify(payload) });
+    resetTaskForm();
+    setStatus(editing ? 'Task updated' : 'Task created');
+    await refreshData();
+  } catch (error) {
+    setStatus(error.message);
+  }
 };
 
 const saveConfig = async () => {
@@ -339,17 +647,9 @@ const initCalendarControls = () => {
   });
 };
 
-const syncSourcePreview = () => {
-  const text = el('trainingText').value.trim();
-  if (state.mode === 'text') {
-    el('sourcePreview').textContent = text || 'No content submitted yet.';
-  }
-};
-
 document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
 el('textModeBtn').addEventListener('click', () => toggleMode('text'));
 el('audioModeBtn').addEventListener('click', () => toggleMode('audio'));
-el('trainingText').addEventListener('input', syncSourcePreview);
 el('recordBtn').addEventListener('click', async () => {
   try {
     if (state.recorder && state.recorder.state === 'recording') {
@@ -368,6 +668,34 @@ el('submitTrainingBtn').addEventListener('click', async () => {
     setStatus(error.message);
   }
 });
+el('taskSubmitBtn').addEventListener('click', async () => {
+  try {
+    await submitTask();
+  } catch (error) {
+    setStatus(error.message);
+  }
+});
+// New practice button behavior: reset form and re-enable submit
+if (el('newPracticeBtn')) {
+  el('newPracticeBtn').addEventListener('click', () => {
+    el('newPracticeBtn').classList.add('hidden');
+    el('submitTrainingBtn').classList.remove('hidden');
+    el('submitTrainingBtn').disabled = false;
+    el('submitTrainingBtn').textContent = 'Submit';
+    el('recordBtn').disabled = false;
+    el('trainingTitle').disabled = false;
+    el('trainingText').disabled = false;
+    el('practiceTaskSelect').disabled = false;
+    el('textModeBtn').disabled = false;
+    el('audioModeBtn').disabled = false;
+    el('resultOutput').innerHTML = '';
+    el('trainingTitle').value = '';
+    el('trainingText').value = '';
+    state.audioBlob = null;
+    el('audioPreview').classList.add('hidden');
+  });
+}
+el('taskCancelBtn').addEventListener('click', () => resetTaskForm());
 el('saveConfigBtn').addEventListener('click', async () => {
   try {
     await saveConfig();
@@ -376,6 +704,8 @@ el('saveConfigBtn').addEventListener('click', async () => {
   }
 });
 el('flashcardHashtagFilter').addEventListener('change', renderFlashcards);
+el('flashcardTaskFilter').addEventListener('change', renderFlashcards);
+el('reportTaskFilter').addEventListener('change', refreshData);
 el('reportHashtagFilter').addEventListener('change', refreshData);
 el('reportTitleFilter').addEventListener('input', () => {
   clearTimeout(window.reportFilterTimer);
@@ -389,5 +719,4 @@ el('reviewModeBtn').addEventListener('click', () => {
 
 initCalendarControls();
 toggleMode('text');
-syncSourcePreview();
 refreshData().catch((error) => setStatus(error.message));

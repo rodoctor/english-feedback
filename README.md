@@ -1,4 +1,4 @@
-# English Trainer
+# English Feedback
 
 Web app to train English writing and speaking with AI-assisted corrections, flashcards, and reports.
 
@@ -27,6 +27,7 @@ docker compose up --build
 
 - Frontend: http://localhost:8080
 - Backend health: http://localhost:8000/health
+- PostgreSQL: localhost:5433
 
 ## Configuration
 

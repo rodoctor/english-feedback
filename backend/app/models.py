@@ -36,6 +36,17 @@ class User(Base):
     flashcards: Mapped[list["Flashcard"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    sessions: Mapped[list["TrainingSession"]] = relationship(back_populates="task")
+
+
 class Hashtag(Base):
     __tablename__ = "hashtags"
 
@@ -48,16 +59,19 @@ class TrainingSession(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id", ondelete="RESTRICT"), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     input_mode: Mapped[str] = mapped_column(String(16), nullable=False)
     original_content: Mapped[str] = mapped_column(Text, nullable=False)
     ai_response: Mapped[dict] = mapped_column(JSON, nullable=False)
     transcript: Mapped[str | None] = mapped_column(Text)
     audio_path: Mapped[str | None] = mapped_column(String(512))
+    audio_duration_seconds: Mapped[int | None] = mapped_column(Integer)
     provider: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped[User] = relationship(back_populates="sessions")
+    task: Mapped[Task] = relationship(back_populates="sessions")
     hashtags: Mapped[list[Hashtag]] = relationship(secondary=session_hashtags, lazy="joined")
     flashcards: Mapped[list["Flashcard"]] = relationship(back_populates="session", cascade="all, delete-orphan")
 

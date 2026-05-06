@@ -34,3 +34,23 @@ def compress_audio(upload: UploadFile) -> Path:
         return target_path
     except Exception:
         return source_path
+
+
+def get_audio_duration_seconds(path: Path) -> int | None:
+    command = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        str(path),
+    ]
+
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        duration = float(result.stdout.strip())
+        return max(0, int(round(duration)))
+    except Exception:
+        return None

@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.services.crud import create_flashcards, create_training_session, get_or_create_default_user, list_unique_hashtags
+from app.services.crud import create_flashcards, create_training_session, get_or_create_default_user, get_task, list_unique_hashtags
 from app.db.session import get_db
 from app.models import User
 from app.schemas import TrainingResponse
 from app.services.ai.factory import build_ai_service
 from app.services.ai.utils import build_markdown_response, normalize_audio_transcript, sanitize_audio_response
 from app.services.audio import compress_audio
+from app.services.audio import get_audio_duration_seconds
 from pathlib import Path
 import shutil
 from uuid import uuid4
@@ -52,15 +53,20 @@ def _ensure_corrections(ai_response: dict, analysis_source: str, input_mode: str
     return updated
 
 
+@router.post("/analyze", response_model=TrainingResponse)
 @router.post("/trainings", response_model=TrainingResponse)
 def create_training(
     title: str = Form(...),
     input_mode: str = Form(...),
+    task_id: int = Form(...),
     text: str | None = Form(default=None),
     audio: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
 ) -> TrainingResponse:
     user = _default_user(db)
+    task = get_task(db, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
     ai_service = build_ai_service(user)
 
     transcript: str | None = None
@@ -76,6 +82,7 @@ def create_training(
         if user.provider == "claude":
             raise HTTPException(status_code=400, detail="Selected provider does not support audio transcription yet")
         audio_path = compress_audio(audio)
+        audio_duration_seconds = get_audio_duration_seconds(audio_path)
         persisted_audio_url = None
         try:
             transcription_prompt = (
@@ -106,6 +113,9 @@ def create_training(
     else:
         raise HTTPException(status_code=400, detail="Invalid input mode")
 
+    if input_mode == "text":
+        audio_duration_seconds = None
+
     ai_response = ai_service.analyze(analysis_source, title, input_mode)
     if input_mode == "audio":
         ai_response = sanitize_audio_response(ai_response)
@@ -121,6 +131,7 @@ def create_training(
     session = create_training_session(
         db=db,
         user=user,
+        task=task,
         title=title.strip(),
         input_mode=input_mode,
         original_content=original_content,
@@ -128,6 +139,7 @@ def create_training(
         ai_response=ai_response,
         hashtags=hashtags,
         audio_path=persisted_audio_url if input_mode == 'audio' else None,
+        audio_duration_seconds=audio_duration_seconds if input_mode == 'audio' else None,
     )
     flashcards = create_flashcards(db, user, session, ai_response.get("flashcards", []), hashtags)
     db.commit()
@@ -135,11 +147,14 @@ def create_training(
 
     return TrainingResponse(
         session_id=session.id,
+        task_id=task.id,
+        task_title=task.title,
         title=session.title,
         input_mode=session.input_mode,
         original_content=session.original_content,
         transcript=session.transcript,
         audio_url=session.audio_path,
+        audio_duration_seconds=session.audio_duration_seconds,
         ai_response=session.ai_response,
         markdown_response=build_markdown_response(
             session.ai_response,

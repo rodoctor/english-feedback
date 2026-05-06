@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>English Trainer</title>
+  <title>English Feedback</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="hero-panel">
       <div>
-        <p class="eyebrow">English Trainer</p>
+        <p class="eyebrow">English Feedback</p>
         <h1>Objective feedback for writing and speaking.</h1>
         <p class="hero-copy">Train with text or audio, store corrections securely, and review flashcards and study reports from one place.</p>
       </div>
@@ -31,17 +31,53 @@
       </header>
 
       <nav class="tabs" aria-label="Main sections">
-        <button class="tab active" data-tab="training">Training</button>
+        <button class="tab active" data-tab="tasks">Tasks</button>
+        <button class="tab" data-tab="practice">Practice</button>
         <button class="tab" data-tab="flashcards">Flashcards</button>
         <button class="tab" data-tab="config">Config</button>
         <button class="tab" data-tab="report">Report</button>
       </nav>
 
-      <section class="panel active" id="trainingPanel">
+      <section class="panel active" id="tasksPanel">
+        <div class="section-head">
+          <h3>Tasks</h3>
+          <span class="hint">Manage learning goals</span>
+        </div>
+        <div class="grid-two">
+          <label class="field">
+            <span>Task title</span>
+            <input id="taskTitleInput" type="text" placeholder="Describe the task" />
+          </label>
+          <label class="field">
+            <span>Description</span>
+            <textarea id="taskDescriptionInput" rows="4" placeholder="Add task details..."></textarea>
+          </label>
+        </div>
+        <div class="inline-controls task-actions">
+          <button class="primary" id="taskSubmitBtn" type="button">Add Task</button>
+          <button class="secondary hidden" id="taskCancelBtn" type="button">Cancel edit</button>
+        </div>
+        <div class="legend-badges">
+          <div class="legend-item">
+            <span class="dot text-dot"></span>
+            <span class="legend-label">Text practice</span>
+          </div>
+          <div class="legend-item">
+            <span class="dot audio-dot"></span>
+            <span class="legend-label">Audio practice</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-label">🔥 Days studied</span>
+          </div>
+        </div>
+        <div class="task-grid" id="tasksList"></div>
+      </section>
+
+      <section class="panel" id="practicePanel">
         <div class="grid-two">
           <label class="field">
             <span>Title</span>
-            <input id="trainingTitle" type="text" placeholder="Lesson, topic, or activity title" />
+            <input id="trainingTitle" required type="text" placeholder="Lesson, topic, or activity title" />
           </label>
 
           <div class="field">
@@ -52,6 +88,11 @@
             </div>
           </div>
         </div>
+
+        <label class="field">
+          <span>Select Task</span>
+          <select id="practiceTaskSelect"></select>
+        </label>
 
         <div class="mode-body">
           <label class="field" id="textInputWrap">
@@ -70,14 +111,7 @@
         </div>
 
         <button class="primary submit-btn" id="submitTrainingBtn" type="button">Submit</button>
-
-        <div class="result-block">
-          <div class="section-head">
-            <h3>Submitted content</h3>
-            <span class="hint">Non selectable</span>
-          </div>
-          <div id="sourcePreview" class="source-preview" aria-readonly="true">No content submitted yet.</div>
-        </div>
+        <button class="secondary hidden" id="newPracticeBtn" type="button">New</button>
 
         <div class="result-block">
           <div class="section-head">
@@ -92,6 +126,9 @@
         <div class="section-head">
           <h3>Flashcards</h3>
           <div class="inline-controls">
+            <select id="flashcardTaskFilter">
+              <option value="">All tasks</option>
+            </select>
             <select id="flashcardHashtagFilter">
               <option value="">All hashtags</option>
             </select>
@@ -125,6 +162,9 @@
         <div class="section-head">
           <h3>Report</h3>
           <div class="inline-controls">
+            <select id="reportTaskFilter">
+              <option value="">All tasks</option>
+            </select>
             <select id="reportHashtagFilter">
               <option value="">All hashtags</option>
             </select>
@@ -145,8 +185,11 @@
           <div class="analytics-card">
             <h4>Analytics</h4>
             <div class="analytics-list" id="analyticsList"></div>
+            <canvas id="reportChart" width="600" height="200" style="width:100%;height:160px;margin-top:12px;border-radius:8px;background:rgba(5,8,7,0.95);display:block"></canvas>
           </div>
         </div>
+
+        <div class="task-report-list" id="reportTaskGroups"></div>
       </section>
     </main>
   </div>

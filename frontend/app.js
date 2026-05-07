@@ -236,7 +236,7 @@ const renderTasks = () => {
         <div class="dots audio-dots" data-audio-for="${task.id}"></div>
         <div class="flame" data-flame-for="${task.id}">🔥 <span class="count">0</span></div>
       </div>
-      <div class="task-duration" data-duration-for="${task.id}">0.0 min falados</div>
+      <div class="task-duration" data-duration-for="${task.id}">0.0 min spoken</div>
       <div class="task-card-actions">
         <button class="secondary compact" data-task-edit="${task.id}" type="button">Edit</button>
         <button class="secondary compact" data-task-delete="${task.id}" type="button">Delete</button>
@@ -282,7 +282,7 @@ const renderTasks = () => {
       flameEl.textContent = String(group.study_days_count || 0);
     }
     if (durationEl) {
-      durationEl.textContent = `${formatMinutes(group.spoken_minutes)} falados`;
+      durationEl.textContent = `${formatMinutes(group.spoken_minutes)} spoken`;
     }
   });
 };

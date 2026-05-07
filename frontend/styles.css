@@ -152,12 +152,40 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 0.96rem;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 
 .tab, .secondary, .toggle {
   background: rgba(8, 12, 10, 0.9);
   color: var(--ink);
   border: 1px solid var(--line);
+  transition: all 200ms ease;
+}
+
+.tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(0,255,136,0.15), transparent 70%);
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.tab:active::before {
+  animation: tabRipple 400ms ease-out;
+}
+
+@keyframes tabRipple {
+  from {
+    opacity: 1;
+    transform: scale(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2);
+  }
 }
 .tab:hover, .secondary:hover, .toggle:hover, .primary:hover {
   transform: translateY(-1px);
@@ -167,6 +195,8 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
   background: rgba(0, 255, 136, 0.16);
   color: var(--accent);
   border-color: rgba(0, 255, 136, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 255, 136, 0.12), 0 0 0 1px rgba(0, 255, 136, 0.35);
 }
 .primary {
   background: var(--accent);
@@ -180,9 +210,23 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
   display: none;
   padding: 22px;
   border-radius: 12px;
-  animation: fadeIn 220ms ease-out;
+  animation: slideInFade 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.panel.active { display: block; }
+.panel.active {
+  display: block;
+  animation: slideInFade 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideInFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .grid-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .field { display: grid; gap: 8px; margin-bottom: 16px; }

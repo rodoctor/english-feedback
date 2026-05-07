@@ -2,6 +2,12 @@
 
 All notable changes to this project are recorded here.
 
+## v0.05.02 - Audio backup export and restore
+
+- Included uploaded audio files in the backup export ZIP.
+- Restored audio files from uploaded ZIP backups during import.
+- Preserved session audio references so exported and imported study history stays complete.
+
 ## v0.05.01 - Stability and UX refinements
 
 - Fixed report payload validation issues by aligning backend responses with the report schema.

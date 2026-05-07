@@ -87,6 +87,14 @@ Use the `Config` tab to store the provider and API key in the backend database.
 
 The API key stays server-side, so it is not exposed in the browser.
 
+### Backup and restore
+
+Use the backup tools in the `Config` tab to export and import your study data.
+
+- Export generates a ZIP with `data.json` plus any uploaded audio files referenced by practice sessions.
+- Import restores the database records and writes the audio files back into `backend/app/static/uploads`.
+- This keeps audio practice history playable after moving data between environments.
+
 ## Notes
 
 - The backend uses an AI service abstraction layer, which makes it easier to switch providers.

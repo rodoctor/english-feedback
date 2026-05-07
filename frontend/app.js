@@ -762,7 +762,7 @@ const initCalendarControls = () => {
   });
 };
 
-document.querySelectorAll('.tab').forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
+document.querySelectorAll('.tabs-wrap .tab').forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
 el('textModeBtn').addEventListener('click', () => toggleMode('text'));
 el('audioModeBtn').addEventListener('click', () => toggleMode('audio'));
 el('recordBtn').addEventListener('click', async () => {

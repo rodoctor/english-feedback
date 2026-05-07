@@ -15,6 +15,24 @@ from app.schemas import ConfigResponse, ConfigUpdate
 router = APIRouter(prefix="/api", tags=["config"])
 
 
+def _audio_archive_name(audio_path: str | None) -> str | None:
+    if not audio_path:
+        return None
+    normalized = audio_path.lstrip("/")
+    if not normalized:
+        return None
+    if normalized.startswith("uploads/"):
+        return normalized
+    return f"uploads/{Path(normalized).name}"
+
+
+def _audio_source_path(audio_path: str | None) -> Path | None:
+    archive_name = _audio_archive_name(audio_path)
+    if not archive_name:
+        return None
+    return Path(__file__).parent / "static" / archive_name
+
+
 def _default_user(db: Session) -> User:
     settings = get_settings()
     return get_or_create_default_user(db, settings.default_user_email, settings.ai_default_provider)
@@ -101,15 +119,12 @@ def export_backup(db: Session = Depends(get_db)):
     with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("data.json", json.dumps(data, ensure_ascii=False))
 
-        # include audio files referenced by sessions (relative to static/uploads)
-        upload_dir = Path(__file__).parent / "static" / "uploads"
+        # include audio files referenced by sessions
         for s in sessions:
-            if s.audio_path:
-                # audio_path stored like "uploads/xxx.webm" or just "uploads/xxx"
-                candidate = (Path(__file__).parent / "static" / s.audio_path.lstrip("/"))
-                if candidate.exists() and candidate.is_file():
-                    arcname = Path("uploads") / candidate.name
-                    zf.write(candidate, arcname=str(arcname))
+            candidate = _audio_source_path(s.audio_path)
+            archive_name = _audio_archive_name(s.audio_path)
+            if candidate and archive_name and candidate.exists() and candidate.is_file():
+                zf.write(candidate, arcname=archive_name)
 
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/zip", headers={"Content-Disposition": "attachment; filename=english-feedback-backup.zip"})
@@ -204,12 +219,15 @@ def import_backup(file: UploadFile = File(...), db: Session = Depends(get_db)):
                 if hid:
                     conn.execute(flashcard_hashtags.insert().values(flashcard_id=fid, hashtag_id=hid))
 
-    # extract uploads
-    upload_dir = Path(__file__).parent / "static" / "uploads"
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    # extract audio files and restore them under static/
+    static_dir = Path(__file__).parent / "static"
+    static_dir.mkdir(parents=True, exist_ok=True)
     for name in zf.namelist():
-        if name.startswith("uploads/") and not name.endswith("/"):
-            target = upload_dir / Path(name).name
+        if name == "data.json" or name.endswith("/"):
+            continue
+        if name.startswith("uploads/"):
+            target = static_dir / name
+            target.parent.mkdir(parents=True, exist_ok=True)
             with open(target, "wb") as fh:
                 fh.write(zf.read(name))
 

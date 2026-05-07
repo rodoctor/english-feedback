@@ -82,7 +82,7 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
   padding: 26px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 0 18px;
 }
 
 .topbar, .section-head, .calendar-header, .inline-controls {
@@ -102,24 +102,28 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
 
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  background: linear-gradient(180deg, rgba(8,12,10,0.5), rgba(5,8,7,0.8));
+  padding: 8px 16px 0 16px;
+  margin: 0;
 }
 
 /* Top tab bar styling */
 .tabs-wrap {
   display: block;
-  background: linear-gradient(90deg, rgba(0,255,136,0.06), rgba(32,217,127,0.03));
-  padding: 12px 18px;
-  border-radius: 12px 12px 0 0;
-  margin-bottom: 0px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
-  border: 1px solid rgba(0,255,136,0.06);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  margin-bottom: 0;
+  box-shadow: none;
+  border: none;
 }
 
 .tabs-wrap .tabs {
   background: transparent;
-  padding-left: 6px;
+  padding: 8px 16px 0 16px;
+  margin: 0;
 }
 
 /* Base button styles */
@@ -136,24 +140,28 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
 }
 
 .tab, .secondary, .toggle {
-  background: rgba(8, 12, 10, 0.9);
+  background: rgba(8, 12, 10, 0.7);
   color: var(--ink);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(0,255,136,0.1);
 }
 
 /* Main tab bar tabs */
 .tabs-wrap .tabs .tab {
-  border-radius: 10px 10px 0 0;
-  padding: 10px 18px;
-  background: rgba(8,12,10,0.85);
-  border-bottom: 3px solid transparent;
+  border-radius: var(--corner) var(--corner) 0 0;
+  padding: 11px 16px;
+  background: rgba(8, 12, 10, 0.6);
+  border-bottom: 2px solid transparent;
+  border: 1px solid rgba(0,255,136,0.08);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
 }
 
 .tabs-wrap .tabs .tab.active {
   background: var(--panel-strong);
   color: var(--accent);
+  border: 1px solid rgba(0,255,136,0.25);
   border-bottom-color: var(--panel-strong);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.6) inset, 0 6px 18px rgba(0,255,136,0.04);
+  box-shadow: none;
   transform: none;
 }
 
@@ -198,30 +206,52 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
 /* Config subtabs */
 .config-subnav {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
   background: transparent;
   padding: 0;
 }
 
 .config-subnav .tab {
-  padding: 8px 12px;
-  border-radius: var(--corner);
-  font-size: 0.9rem;
-  background: rgba(8, 12, 10, 0.85);
-  border: 1px solid var(--line);
+  /* match main tab appearance */
+  border-radius: var(--corner) var(--corner) 0 0;
+  padding: 11px 16px;
+  background: rgba(8, 12, 10, 0.6);
+  border: 1px solid rgba(0,255,136,0.08);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
 }
 
 .config-subnav .tab.active {
-  background: rgba(0, 255, 136, 0.16);
-  color: var(--accent-2);
-  border-color: rgba(0, 255, 136, 0.35);
+  background: var(--panel-strong);
+  color: var(--accent);
+  border: 1px solid rgba(0,255,136,0.25);
+  border-bottom-color: var(--panel-strong);
   box-shadow: none;
 }
 
+/* Config panel that connects to its tabs visually */
+.config-tabs-wrap { margin-top: 8px; }
+.config-panel {
+  border: 1px solid rgba(0,255,136,0.08);
+  border-radius: 0 0 var(--corner) var(--corner);
+  box-shadow: var(--shadow);
+  background: linear-gradient(180deg, rgba(8,12,10,0.98), rgba(6,8,7,0.98));
+  padding: 14px;
+  margin-top: -1px; /* pull up to connect to tabs */
+}
+.config-panel .cfg-pane { background: transparent; padding: 0; border: none; }
+
 /* Make panel appear as content under the tab bar */
-.workspace { padding-top: 6px; }
-.panel { margin-top: 6px; border-top-left-radius: 0; border-top-right-radius: 12px; }
+.workspace { padding-top: 0; }
+.panel {
+  margin-top: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-radius: 0 0 var(--corner) var(--corner);
+  border: 1px solid var(--line);
+  border-top: 1px solid rgba(0,255,136,0.1);
+  box-shadow: var(--shadow);
+}
 .primary {
   background: var(--accent);
   color: #03130a;

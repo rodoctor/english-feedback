@@ -686,6 +686,71 @@ const saveConfig = async () => {
   await refreshData();
 };
 
+const exportBackup = async () => {
+  setStatus('Preparing backup');
+  try {
+    const res = await fetch('/api/backup/export');
+    if (!res.ok) throw new Error(await res.text());
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'english-feedback-backup.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setStatus('Backup downloaded');
+  } catch (err) {
+    setStatus(err.message);
+  }
+};
+
+const importBackup = async () => {
+  const input = el('importBackupInput');
+  if (!input || !input.files || !input.files.length) {
+    setStatus('Select a backup file first');
+    return;
+  }
+  const file = input.files[0];
+  const form = new FormData();
+  form.append('file', file);
+  setStatus('Importing backup');
+  try {
+    await api('/backup/import', { method: 'POST', body: form });
+    setStatus('Backup imported');
+    input.value = '';
+    await refreshData();
+  } catch (err) {
+    setStatus(err.message);
+  }
+};
+
+const resetAll = async () => {
+  const input = el('resetConfirmInput');
+  if (!input) return setStatus('Confirmation input not found');
+  const value = input.value.trim();
+  if (value !== 'kaboom') return setStatus('Confirmation word does not match');
+  setStatus('Resetting data');
+  try {
+    await api('/reset', { method: 'POST', body: JSON.stringify({ confirm: value }), headers: { 'Content-Type': 'application/json' } });
+    setStatus('All data reset');
+    await refreshData();
+  } catch (err) {
+    setStatus(err.message);
+  }
+};
+
+// config subtabs
+const showConfigPane = (name) => {
+  const panes = { export: el('cfgExportPane'), import: el('cfgImportPane'), danger: el('cfgDangerPane') };
+  Object.keys(panes).forEach((k) => { if (panes[k]) panes[k].style.display = (k === name) ? '' : 'none'; });
+  // toggle active class
+  el('cfgTabExport').classList.toggle('active', name === 'export');
+  el('cfgTabImport').classList.toggle('active', name === 'import');
+  el('cfgTabDanger').classList.toggle('active', name === 'danger');
+};
+
 const initCalendarControls = () => {
   el('prevMonthBtn').addEventListener('click', async () => {
     state.reportMonth = new Date(state.reportMonth.getFullYear(), state.reportMonth.getMonth() - 1, 1);
@@ -753,6 +818,40 @@ el('saveConfigBtn').addEventListener('click', async () => {
     setStatus(error.message);
   }
 });
+if (el('exportBackupBtn')) {
+  el('exportBackupBtn').addEventListener('click', async () => {
+    try {
+      await exportBackup();
+    } catch (err) {
+      setStatus(err.message);
+    }
+  });
+}
+if (el('importBackupBtn')) {
+  el('importBackupBtn').addEventListener('click', async () => {
+    try {
+      await importBackup();
+    } catch (err) {
+      setStatus(err.message);
+    }
+  });
+}
+if (el('resetAllBtn')) {
+  el('resetAllBtn').addEventListener('click', async () => {
+    try {
+      await resetAll();
+    } catch (err) {
+      setStatus(err.message);
+    }
+  });
+}
+
+if (el('cfgTabExport')) el('cfgTabExport').addEventListener('click', () => showConfigPane('export'));
+if (el('cfgTabImport')) el('cfgTabImport').addEventListener('click', () => showConfigPane('import'));
+if (el('cfgTabDanger')) el('cfgTabDanger').addEventListener('click', () => showConfigPane('danger'));
+
+// default to export pane
+showConfigPane('export');
 el('flashcardHashtagFilter').addEventListener('change', renderFlashcards);
 el('flashcardTaskFilter').addEventListener('change', renderFlashcards);
 el('reportTaskFilter').addEventListener('change', refreshData);

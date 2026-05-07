@@ -31,13 +31,15 @@
         <div class="pill" id="saveStatus">Ready</div>
       </header>
 
-      <nav class="tabs" aria-label="Main sections">
-        <button class="tab active" data-tab="tasks">Tasks</button>
-        <button class="tab" data-tab="practice">Practice</button>
-        <button class="tab" data-tab="flashcards">Flashcards</button>
-        <button class="tab" data-tab="config">Config</button>
-        <button class="tab" data-tab="report">Report</button>
-      </nav>
+      <div class="tabs-wrap">
+        <nav class="tabs" aria-label="Main sections">
+          <button class="tab active" data-tab="tasks">Tasks</button>
+          <button class="tab" data-tab="practice">Practice</button>
+          <button class="tab" data-tab="flashcards">Flashcards</button>
+          <button class="tab" data-tab="config">Config</button>
+          <button class="tab" data-tab="report">Report</button>
+        </nav>
+      </div>
 
       <section class="panel active" id="tasksPanel">
         <div class="section-head">
@@ -157,6 +159,29 @@
           </label>
         </div>
         <button class="primary" id="saveConfigBtn" type="button">Save config</button>
+
+        <div class="config-subtabs" style="margin-top:12px;">
+          <nav class="tabs config-subnav" aria-label="Config panes">
+            <button class="tab" id="cfgTabExport" type="button">Export</button>
+            <button class="tab" id="cfgTabImport" type="button">Import</button>
+            <button class="tab" id="cfgTabDanger" type="button">Danger</button>
+          </nav>
+
+          <div id="cfgExportPane">
+            <button class="secondary" id="exportBackupBtn" type="button">Export backup</button>
+          </div>
+
+          <div id="cfgImportPane" style="display:none;">
+            <label class="field"><span>Choose backup (ZIP)</span><input id="importBackupInput" type="file" accept=".zip" /></label>
+            <div style="margin-top:8px;"><button class="secondary" id="importBackupBtn" type="button">Import backup</button></div>
+          </div>
+
+          <div id="cfgDangerPane" style="display:none; background:rgba(200,20,20,0.04); padding:12px; border-radius:6px;">
+            <p class="hint">Reset will permanently delete all data and uploaded audio.</p>
+            <label class="field"><span>Type <strong>kaboom</strong> to confirm</span><input id="resetConfirmInput" type="text" placeholder="kaboom" /></label>
+            <div style="margin-top:8px;"><button id="resetAllBtn" class="secondary" type="button">Reset all data</button></div>
+          </div>
+        </div>
       </section>
 
       <section class="panel" id="reportPanel">

@@ -12,6 +12,7 @@ from app.routers.config import router as config_router
 from app.routers.flashcards import router as flashcards_router
 from app.routers.health import router as health_router
 from app.routers.report import router as report_router
+from app.routers.daily_words import router as daily_words_router
 from app.routers.training import router as training_router
 from app.routers.tasks import router as tasks_router
 
@@ -87,6 +88,7 @@ app.include_router(training_router)
 app.include_router(tasks_router)
 app.include_router(flashcards_router)
 app.include_router(report_router)
+app.include_router(daily_words_router)
 
 # Serve uploaded audio files from backend/app/static/uploads
 upload_path = Path(__file__).parent / "static" / "uploads"

@@ -166,3 +166,55 @@ If MODE=audio:
 - Focus on whether the speaker communicated ideas naturally and clearly.
 
 """
+
+
+DAILY_WORDS_GENERATION_PROMPT = """
+You are an English vocabulary coach.
+
+Generate exactly 10 useful English words for daily conversation.
+
+Rules:
+- Mix themes naturally: travel, daily life, conversation, technology, work, social situations, and practical topics.
+- Use words appropriate for everyday communication.
+- Avoid obscure, overly academic, or offensive words.
+- Return valid JSON only.
+- Do not include markdown or explanations.
+
+Return this JSON shape:
+{
+    "words": [
+        {
+            "word": "...",
+            "meaning": "Simple meaning in Portuguese",
+            "usage_example": "One natural English sentence using the word"
+        }
+    ]
+}
+"""
+
+
+DAILY_WORDS_EVALUATION_PROMPT = """
+You are an English teacher evaluating vocabulary usage.
+
+You will receive a list of user sentences, each sentence should use a target word.
+
+Rules:
+- Evaluate grammar and if the target word is used naturally.
+- If correct, provide very short positive feedback.
+- If incorrect, explain in one short sentence what is wrong and provide a better sentence.
+- Keep feedback concise and instructional.
+- Return valid JSON only.
+- Use markdown only inside feedback_markdown.
+
+Return this JSON shape:
+{
+    "results": [
+        {
+            "entry_id": 1,
+            "is_correct": true,
+            "feedback_markdown": "- ✅ ...",
+            "improved_sentence": "..."
+        }
+    ]
+}
+"""

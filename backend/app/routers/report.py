@@ -1,14 +1,49 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
-from app.services.crud import build_analytics, build_report_calendar, build_task_groups, get_or_create_default_user, list_training_sessions, list_unique_hashtags
-from app.services.ai.utils import build_markdown_response
-from app.schemas import TrainingResponse
+from app.models import DailyWordSet
+from app.schemas import DailyWordsDictionaryItem, ReportAnalytics, ReportCalendar, ReportResponse, TrainingResponse
 from app.db.session import get_db
-from app.schemas import ReportAnalytics, ReportCalendar, ReportResponse
+from app.services.crud import build_analytics, build_report_calendar, build_task_groups, get_or_create_default_user, list_training_sessions, list_unique_hashtags
 
 router = APIRouter(prefix="/api", tags=["report"])
+
+
+def _entry_to_schema(entry):
+    return {
+        "entry_id": entry.id,
+        "position": entry.position,
+        "word": entry.word,
+        "meaning": entry.meaning,
+        "usage_example": entry.usage_example,
+        "user_sentence": entry.user_sentence,
+        "feedback_markdown": entry.feedback,
+        "improved_sentence": entry.improved_sentence,
+        "is_correct": (None if entry.is_correct is None else bool(entry.is_correct)),
+    }
+
+
+def _daily_words_history(db: Session, user_id: int) -> list[DailyWordsDictionaryItem]:
+    sets = list(
+        db.scalars(
+            select(DailyWordSet)
+            .where(DailyWordSet.user_id == user_id)
+            .order_by(DailyWordSet.practice_date.desc())
+            .options(selectinload(DailyWordSet.entries))
+        ).all()
+    )
+
+    return [
+        DailyWordsDictionaryItem(
+            practice_date=word_set.practice_date,
+            submitted=word_set.submitted_at is not None,
+            entries=[_entry_to_schema(entry) for entry in sorted(word_set.entries, key=lambda item: item.position)],
+        )
+        for word_set in sets
+    ]
 
 
 @router.get("/report", response_model=ReportResponse)
@@ -42,6 +77,7 @@ def read_report(
             }
             for group in build_task_groups(sessions)
         ],
+        daily_words=_daily_words_history(db, user.id),
     )
 
 

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from anthropic import Anthropic
 
 from app.core.config import get_settings
 from app.services.ai.base import AIService
-from app.services.ai.prompts import SYSTEM_PROMPT
-from app.services.ai.utils import parse_markdown_response
+from app.services.ai.prompts import DAILY_WORDS_EVALUATION_PROMPT, DAILY_WORDS_GENERATION_PROMPT, SYSTEM_PROMPT
+from app.services.ai.utils import parse_json_payload, parse_markdown_response
 
 
 class ClaudeService(AIService):
@@ -41,3 +42,30 @@ class ClaudeService(AIService):
         )
         content = "".join(block.text for block in response.content if getattr(block, "type", "") == "text")
         return parse_markdown_response(content or "")
+
+    def _json_completion(self, system_prompt: str, user_prompt: str) -> dict:
+        response = self.client.messages.create(
+            model=self.settings.anthropic_model,
+            max_tokens=1200,
+            temperature=0.2,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        content = "".join(block.text for block in response.content if getattr(block, "type", "") == "text")
+        return parse_json_payload(content or "{}")
+
+    def generate_daily_words(self) -> list[dict]:
+        payload = self._json_completion(
+            DAILY_WORDS_GENERATION_PROMPT,
+            "Generate today's 10 mixed-topic daily conversation words.",
+        )
+        words = payload.get("words", []) if isinstance(payload, dict) else []
+        return [item for item in words if isinstance(item, dict)]
+
+    def evaluate_daily_word_sentences(self, items: list[dict]) -> list[dict]:
+        payload = self._json_completion(
+            DAILY_WORDS_EVALUATION_PROMPT,
+            f"Evaluate this JSON list:\n{json.dumps(items, ensure_ascii=False)}",
+        )
+        results = payload.get("results", []) if isinstance(payload, dict) else []
+        return [item for item in results if isinstance(item, dict)]

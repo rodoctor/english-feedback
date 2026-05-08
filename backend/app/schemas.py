@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date, datetime
 
 from pydantic import BaseModel, Field
@@ -84,7 +86,8 @@ class CountItem(BaseModel):
 
 
 class ReportAnalytics(BaseModel):
-    study_streak: int
+    current_streak: int
+    max_streak: int
     most_common_errors: list[CountItem]
     most_used_hashtags: list[CountItem]
     sessions_per_task: list[CountItem]
@@ -111,6 +114,7 @@ class ReportResponse(BaseModel):
     analytics: ReportAnalytics
     hashtags: list[str]
     tasks: list[ReportTaskGroup]
+    daily_words: list[DailyWordsDictionaryItem] = Field(default_factory=list)
 
 
 class TrainingRequest(BaseModel):
@@ -118,3 +122,40 @@ class TrainingRequest(BaseModel):
     input_mode: str
     task_id: int
     text: str | None = None
+
+
+class DailyWordEntryResponse(BaseModel):
+    entry_id: int
+    position: int
+    word: str
+    meaning: str
+    usage_example: str
+    user_sentence: str | None = None
+    feedback_markdown: str | None = None
+    improved_sentence: str | None = None
+    is_correct: bool | None = None
+
+
+class DailyWordsTodayResponse(BaseModel):
+    practice_date: str
+    submitted: bool
+    entries: list[DailyWordEntryResponse]
+
+
+class DailyWordAnswerItem(BaseModel):
+    entry_id: int
+    sentence: str
+
+
+class DailyWordsSubmitRequest(BaseModel):
+    answers: list[DailyWordAnswerItem]
+
+
+class DailyWordsDictionaryItem(BaseModel):
+    practice_date: str
+    submitted: bool
+    entries: list[DailyWordEntryResponse]
+
+
+class DailyWordsDictionaryResponse(BaseModel):
+    items: list[DailyWordsDictionaryItem]

@@ -10,6 +10,50 @@ const state = {
   reportMonth: new Date(),
   reviewMode: false,
   editingTaskId: null,
+  dailyWords: null,
+  dailyWordsLoadedDate: null,
+};
+
+const ensureToast = () => {
+  return document.getElementById('appToast');
+};
+
+const showToast = (message, status = 'pending') => {
+  const toast = ensureToast();
+  if (!toast) return;
+  clearTimeout(window.appToastTimer);
+  toast.className = `app-toast ${status}`;
+  toast.textContent = message;
+  toast.classList.add('visible');
+  window.appToastTimer = setTimeout(() => {
+    toast.classList.remove('visible');
+  }, 2200);
+};
+
+const setDailyWordInputState = (entryId) => {
+  const input = el(`dailyWordInput-${entryId}`);
+  if (!input) return;
+  const value = input.value.trim();
+  const card = input.closest('.daily-word-card');
+  input.classList.toggle('input-empty', !value);
+  input.classList.toggle('input-filled', Boolean(value));
+  if (card) {
+    card.classList.toggle('needs-answer', !value);
+    card.classList.toggle('has-answer', Boolean(value));
+  }
+};
+
+const focusFirstEmptyDailyWord = () => {
+  if (!state.dailyWords || state.dailyWords.submitted) return;
+  const firstEmpty = (state.dailyWords.entries || []).find((entry) => {
+    const input = el(`dailyWordInput-${entry.entry_id}`);
+    return input && !input.value.trim();
+  });
+  if (!firstEmpty) return;
+  const input = el(`dailyWordInput-${firstEmpty.entry_id}`);
+  if (!input) return;
+  input.focus({ preventScroll: false });
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
 const api = async (path, options = {}) => {
@@ -99,6 +143,12 @@ const switchTab = (tabName) => {
   document.querySelectorAll('.tab').forEach((button) => button.classList.toggle('active', button.dataset.tab === tabName));
   document.querySelectorAll('.panel').forEach((panel) => panel.classList.remove('active'));
   el(`${tabName}Panel`).classList.add('active');
+  if (tabName === 'words') {
+    openDailyWordsTab().catch((error) => setStatus(error.message));
+  }
+  if (tabName === 'dictionary') {
+    openDictionaryTab().catch((error) => setStatus(error.message));
+  }
 };
 
 const toggleMode = (mode) => {
@@ -368,7 +418,8 @@ const renderReport = (report) => {
   });
   const analytics = report.analytics || {};
   el('analyticsList').innerHTML = [
-    ['Study streak', analytics.study_streak ?? 0],
+    ['Current streak', analytics.current_streak ?? 0],
+    ['Max streak', analytics.max_streak ?? 0],
     ['Most used hashtags', (analytics.most_used_hashtags || []).map((item) => `${item.label} (${item.count})`).join(', ') || 'None'],
     ['Sessions per task', (analytics.sessions_per_task || []).map((item) => `${item.label} (${item.count})`).join(', ') || 'None'],
     ['Spoken minutes', formatMinutes(analytics.spoken_minutes ?? 0)],
@@ -376,6 +427,8 @@ const renderReport = (report) => {
   ].map(([labelText, value]) => `<div class="analytics-item"><span>${labelText}</span><strong>${escapeHtml(String(value))}</strong></div>`).join('');
 
   el('studyDayCount').textContent = String(report.calendar?.study_days || 0);
+  el('currentStreakBadge').textContent = String(analytics.current_streak ?? 0);
+  el('maxStreakBadge').textContent = String(analytics.max_streak ?? 0);
 
   const taskGroups = report.tasks || [];
   state.taskGroups = taskGroups;
@@ -405,6 +458,203 @@ const renderReport = (report) => {
       </div>
     </article>
   `).join('') : '<div class="source-preview">No practice data yet.</div>';
+
+  const dailyWordsLog = report.daily_words || [];
+  const dailyWordsReportList = el('dailyWordsReportList');
+  if (dailyWordsReportList) {
+    dailyWordsReportList.innerHTML = dailyWordsLog.length ? dailyWordsLog.map((item) => `
+      <details class="session-item" ${item.submitted ? 'open' : ''}>
+        <summary class="session-summary">
+          <span>${escapeHtml(item.practice_date)} - ${item.submitted ? 'submitted' : 'not submitted'}</span>
+          <span class="chip">${item.entries.length} words</span>
+        </summary>
+        <div class="session-body">
+          ${item.entries.map((entry) => `
+            <article class="daily-word-report-item ${entry.is_correct ? 'correct' : 'incorrect'}">
+              <div class="daily-word-head">
+                <strong>${escapeHtml(entry.word)}</strong>
+                <span class="daily-word-status ${entry.is_correct ? 'correct' : 'incorrect'}">${entry.is_correct ? 'Correct' : (entry.is_correct === false ? 'Needs fix' : 'Pending')}</span>
+              </div>
+              <p><strong>My phrase:</strong> ${escapeHtml(entry.user_sentence || '-')}</p>
+              <p><strong>Improvement:</strong> ${escapeHtml(entry.improved_sentence || '-')}</p>
+            </article>
+          `).join('')}
+        </div>
+      </details>
+    `).join('') : '<div class="source-preview">No daily words log yet.</div>';
+  }
+};
+
+const updateDailyWordsSubmitState = () => {
+  const payload = state.dailyWords;
+  const button = el('dailyWordsSubmitBtn');
+  const hint = el('dailyWordsSubmitHint');
+  if (!payload || !button || !hint) return;
+
+  if (payload.submitted) {
+    button.disabled = true;
+    button.textContent = 'Submitted';
+    hint.textContent = 'Submitted. This activity is locked until tomorrow.';
+    return;
+  }
+
+  const allFilled = (payload.entries || []).every((entry) => {
+    const input = el(`dailyWordInput-${entry.entry_id}`);
+    const typed = input ? input.value.trim() : '';
+    entry.user_sentence = typed;
+    setDailyWordInputState(entry.entry_id);
+    return Boolean(typed);
+  });
+
+  button.disabled = false;
+  button.textContent = 'Submit daily words';
+  hint.textContent = allFilled
+    ? 'Ready to submit.'
+    : 'Complete all 10 sentences, then submit.';
+};
+
+const renderDailyWords = (payload) => {
+  state.dailyWords = payload;
+  if (!payload) {
+    el('dailyWordsList').innerHTML = '<div class="source-preview">Open this tab to load today\'s words.</div>';
+    return;
+  }
+
+  const submitted = Boolean(payload.submitted);
+  el('dailyWordsDateLabel').textContent = `Day: ${payload.practice_date}`;
+  el('dailyWordsInfo').textContent = submitted
+    ? 'Submitted for today. You can review your answers and feedback below.'
+    : 'Write one sentence for each word. After submit, this form is locked until tomorrow.';
+
+  el('dailyWordsList').innerHTML = (payload.entries || []).map((entry) => {
+    const statusLabel = entry.is_correct === null || entry.is_correct === undefined
+      ? 'Pending'
+      : (entry.is_correct ? 'Correct' : 'Needs fix');
+    const statusClass = entry.is_correct === null || entry.is_correct === undefined
+      ? 'pending'
+      : (entry.is_correct ? 'correct' : 'incorrect');
+
+    return `
+      <article class="daily-word-card ${statusClass}">
+        <div class="daily-word-head">
+          <strong>${entry.position}. ${escapeHtml(entry.word)}</strong>
+          <span class="daily-word-status ${statusClass}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <p><strong>Meaning:</strong> ${escapeHtml(entry.meaning)}</p>
+        <p><strong>Example:</strong> ${escapeHtml(entry.usage_example)}</p>
+        <label class="field">
+          <span>Your sentence</span>
+          <textarea id="dailyWordInput-${entry.entry_id}" rows="2" ${submitted ? 'disabled' : ''} placeholder="Write a sentence using ${escapeHtml(entry.word)}">${escapeHtml(entry.user_sentence || '')}</textarea>
+        </label>
+        ${entry.feedback_markdown ? `<div class="daily-word-feedback">${renderMarkdown(entry.feedback_markdown)}</div>` : ''}
+        ${entry.improved_sentence && (!entry.is_correct) ? `<p class="hint"><strong>Improved:</strong> ${escapeHtml(entry.improved_sentence)}</p>` : ''}
+      </article>
+    `;
+  }).join('');
+
+  if (!submitted) {
+    (payload.entries || []).forEach((entry) => {
+      const input = el(`dailyWordInput-${entry.entry_id}`);
+      if (!input) return;
+      input.addEventListener('input', updateDailyWordsSubmitState);
+      input.addEventListener('focus', () => setDailyWordInputState(entry.entry_id));
+    });
+  }
+
+  updateDailyWordsSubmitState();
+  if (!submitted) {
+    setTimeout(() => focusFirstEmptyDailyWord(), 50);
+  }
+};
+
+const renderDailyWordsDictionary = (payload) => {
+  const items = payload?.items || [];
+  if (!items.length) {
+    el('dailyWordsDictionary').innerHTML = 'No daily words history yet.';
+    return;
+  }
+
+  el('dailyWordsDictionary').innerHTML = items.map((item) => `
+    <article class="daily-word-card ${item.submitted ? 'correct' : 'pending'}">
+      <div class="daily-word-head">
+        <strong>${item.entries.length} words</strong>
+        <span class="daily-word-status ${item.submitted ? 'correct' : 'pending'}">${item.submitted ? 'Available' : 'Pending'}</span>
+      </div>
+      <div class="daily-word-mini-list">
+        ${item.entries.map((entry) => `
+          <div class="daily-word-mini-item">
+            <strong>${escapeHtml(entry.word)}</strong>
+            <span>${escapeHtml(entry.meaning)}</span>
+            <small>${escapeHtml(entry.usage_example)}</small>
+          </div>
+        `).join('')}
+      </div>
+    </article>
+  `).join('');
+};
+
+const openDictionaryTab = async () => {
+  setStatus('Loading dictionary');
+  const dictionary = await api('/daily-words/dictionary');
+  renderDailyWordsDictionary(dictionary);
+  setStatus('Dictionary ready');
+};
+
+const openDailyWordsTab = async () => {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  if (state.dailyWordsLoadedDate === todayKey && state.dailyWords) {
+    renderDailyWords(state.dailyWords);
+    return;
+  }
+
+  setStatus('Loading daily words');
+  const payload = await api('/daily-words/today/open', { method: 'POST' });
+  state.dailyWordsLoadedDate = payload.practice_date;
+  renderDailyWords(payload);
+  setStatus('Daily words ready');
+};
+
+const submitDailyWords = async () => {
+  const payload = state.dailyWords;
+  if (!payload || payload.submitted) return;
+
+  const answers = (payload.entries || []).map((entry) => {
+    const value = el(`dailyWordInput-${entry.entry_id}`)?.value?.trim() || '';
+    return {
+      entry_id: entry.entry_id,
+      sentence: value,
+    };
+  });
+
+  if (answers.some((item) => !item.sentence)) {
+    showToast('Pending: fill all sentences first', 'pending');
+    setStatus('Fill all daily word sentences first');
+    focusFirstEmptyDailyWord();
+    return;
+  }
+
+  showToast('Processing daily words', 'processing');
+  setStatus('Evaluating daily words');
+  const button = el('dailyWordsSubmitBtn');
+  button.disabled = true;
+  button.textContent = 'Submitting...';
+
+  try {
+    const updated = await api('/daily-words/today/submit', {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+    });
+    renderDailyWords(updated);
+    await openDictionaryTab();
+    await refreshData();
+    switchTab('words');
+    showToast('Done: daily words saved', 'done');
+    setStatus('Daily words submitted');
+  } catch (error) {
+    showToast('Error: could not submit daily words', 'error');
+    setStatus(error.message);
+    updateDailyWordsSubmitState();
+  }
 };
 
 const renderReportChart = (items) => {
@@ -865,6 +1115,15 @@ el('reviewModeBtn').addEventListener('click', () => {
   el('reviewModeBtn').textContent = state.reviewMode ? 'Exit review mode' : 'Enter review mode';
   renderFlashcards();
 });
+if (el('dailyWordsSubmitBtn')) {
+  el('dailyWordsSubmitBtn').addEventListener('click', async () => {
+    try {
+      await submitDailyWords();
+    } catch (error) {
+      setStatus(error.message);
+    }
+  });
+}
 
 initCalendarControls();
 toggleMode('text');

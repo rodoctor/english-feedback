@@ -89,3 +89,36 @@ class Flashcard(Base):
     user: Mapped[User] = relationship(back_populates="flashcards")
     session: Mapped[TrainingSession] = relationship(back_populates="flashcards")
     hashtags: Mapped[list[Hashtag]] = relationship(secondary=flashcard_hashtags, lazy="joined")
+
+
+class DailyWordSet(Base):
+    __tablename__ = "daily_word_sets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    practice_date: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    entries: Mapped[list["DailyWordEntry"]] = relationship(
+        back_populates="word_set",
+        cascade="all, delete-orphan",
+        order_by="DailyWordEntry.position",
+    )
+
+
+class DailyWordEntry(Base):
+    __tablename__ = "daily_word_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    word_set_id: Mapped[int] = mapped_column(ForeignKey("daily_word_sets.id", ondelete="CASCADE"), nullable=False, index=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    word: Mapped[str] = mapped_column(String(80), nullable=False)
+    meaning: Mapped[str] = mapped_column(Text, nullable=False)
+    usage_example: Mapped[str] = mapped_column(Text, nullable=False)
+    user_sentence: Mapped[str | None] = mapped_column(Text)
+    feedback: Mapped[str | None] = mapped_column(Text)
+    improved_sentence: Mapped[str | None] = mapped_column(Text)
+    is_correct: Mapped[int | None] = mapped_column(Integer)
+
+    word_set: Mapped[DailyWordSet] = relationship(back_populates="entries")

@@ -16,9 +16,26 @@
         <p class="hero-copy">Train with text or audio, store corrections securely, and review flashcards and study reports from one place.</p>
       </div>
       <div class="hero-stats">
-        <div><span>Provider</span><strong id="providerBadge">OpenAI</strong></div>
-        <div><span>Flashcards</span><strong id="flashcardCount">0</strong></div>
-        <div><span>Study days</span><strong id="studyDayCount">0</strong></div>
+        <div class="hero-stat-card">
+          <span class="hero-stat-label"><span class="hero-stat-icon" aria-hidden="true">⚙️</span>Provider</span>
+          <strong id="providerBadge">OpenAI</strong>
+        </div>
+        <div class="hero-stat-card">
+          <span class="hero-stat-label"><span class="hero-stat-icon" aria-hidden="true">🧠</span>Flashcards</span>
+          <strong id="flashcardCount">0</strong>
+        </div>
+        <div class="hero-stat-card">
+          <span class="hero-stat-label"><span class="hero-stat-icon" aria-hidden="true">📅</span>Study days</span>
+          <strong id="studyDayCount">0</strong>
+        </div>
+        <div class="hero-stat-card streak-card streak-current">
+          <span class="hero-stat-label"><span class="hero-stat-icon flame-icon" aria-hidden="true">🔥</span>Current streak</span>
+          <strong id="currentStreakBadge">0</strong>
+        </div>
+        <div class="hero-stat-card streak-card streak-max">
+          <span class="hero-stat-label"><span class="hero-stat-icon flame-icon" aria-hidden="true">🔥</span>Max streak</span>
+          <strong id="maxStreakBadge">0</strong>
+        </div>
       </div>
     </aside>
 
@@ -36,6 +53,8 @@
           <button class="tab active" data-tab="tasks">Tasks</button>
           <button class="tab" data-tab="practice">Practice</button>
           <button class="tab" data-tab="flashcards">Flashcards</button>
+          <button class="tab" data-tab="words">Words</button>
+          <button class="tab" data-tab="dictionary">Dictionary</button>
           <button class="tab" data-tab="config">Config</button>
           <button class="tab" data-tab="report">Report</button>
         </nav>
@@ -141,6 +160,30 @@
         <div class="flashcard-grid" id="flashcardGrid"></div>
       </section>
 
+      <section class="panel" id="wordsPanel">
+        <div class="section-head">
+          <h3>Daily Words</h3>
+          <span class="hint" id="dailyWordsDateLabel">Open this tab to load today's 10 words</span>
+        </div>
+
+        <p id="dailyWordsInfo" class="daily-words-info">This activity is loaded once per day. Fill all sentences to submit.</p>
+
+        <div id="dailyWordsList" class="daily-words-list"></div>
+
+        <div class="inline-controls" style="margin-top: 12px;">
+          <button class="primary" id="dailyWordsSubmitBtn" type="button">Submit daily words</button>
+          <span class="hint" id="dailyWordsSubmitHint">Complete all 10 sentences, then submit.</span>
+        </div>
+      </section>
+
+      <section class="panel" id="dictionaryPanel">
+        <div class="section-head">
+          <h3>Dictionary</h3>
+          <span class="hint">Words, meanings, and examples</span>
+        </div>
+        <div id="dailyWordsDictionary" class="daily-words-list">No daily words history yet.</div>
+      </section>
+
       <section class="panel" id="configPanel">
         <div class="section-head">
           <h3>Config</h3>
@@ -220,12 +263,19 @@
         </div>
 
         <div class="task-report-list" id="reportTaskGroups"></div>
+
+        <div class="result-block" style="margin-top:16px;">
+          <div class="section-head">
+            <h3>Daily Words log</h3>
+            <span class="hint">Word, your sentence, status, improvement</span>
+          </div>
+          <div id="dailyWordsReportList" class="daily-words-list">No daily words log yet.</div>
+        </div>
       </section>
     </main>
   </div>
 
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script src="app.js"></script>
+  <div id="appToast" class="app-toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <div id="daySessionsModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-backdrop" id="modalBackdrop"></div>
     <div class="modal-panel">
@@ -236,5 +286,7 @@
       <div id="modalContent" class="modal-content"></div>
     </div>
   </div>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="app.js?v=20260508-2"></script>
 </body>
 </html>

@@ -197,6 +197,8 @@ def build_task_groups(sessions: list[TrainingSession]) -> list[dict]:
 
     for session in sessions:
         task = session.task
+        if task and task.title == "Daily Words":
+            continue
         task_key = task.id if task else None
         group = groups.setdefault(
             task_key,
@@ -283,23 +285,37 @@ def build_report_calendar(sessions: list[TrainingSession], month: str | None) ->
     }
 
 
-def _study_streak(dates: list[date]) -> int:
-    if not dates:
-        return 0
-    ordered = sorted(set(dates), reverse=True)
-    streak = 1
-    current = ordered[0]
-    for day in ordered[1:]:
-        if (current - day).days == 1:
-            streak += 1
-            current = day
-        elif day < current:
-            break
-    return streak
+def _streaks(dates: list[date]) -> tuple[int, int]:
+    unique_days = sorted(set(dates))
+    if not unique_days:
+        return 0, 0
+
+    # Current streak only counts if there is activity today.
+    today = datetime.utcnow().date()
+    day_set = set(unique_days)
+    current_streak = 0
+    if today in day_set:
+        probe = today
+        while probe in day_set:
+            current_streak += 1
+            probe -= timedelta(days=1)
+
+    max_streak = 1
+    running = 1
+    for idx in range(1, len(unique_days)):
+        if (unique_days[idx] - unique_days[idx - 1]).days == 1:
+            running += 1
+            if running > max_streak:
+                max_streak = running
+        else:
+            running = 1
+
+    return current_streak, max_streak
 
 
 def build_analytics(sessions: list[TrainingSession]) -> dict:
     dates = [session.created_at.date() for session in sessions]
+    current_streak, max_streak = _streaks(dates)
     error_counter: Counter[str] = Counter()
     hashtag_counter: Counter[str] = Counter()
     task_counter: Counter[str] = Counter()
@@ -317,7 +333,8 @@ def build_analytics(sessions: list[TrainingSession]) -> dict:
     top_task = task_counter.most_common(1)[0] if task_counter else None
 
     return {
-        "study_streak": _study_streak(dates),
+        "current_streak": current_streak,
+        "max_streak": max_streak,
         "most_common_errors": [{"label": label, "count": count} for label, count in error_counter.most_common(5)],
         "most_used_hashtags": [{"label": label, "count": count} for label, count in hashtag_counter.most_common(5)],
         "sessions_per_task": [{"label": label, "count": count} for label, count in task_counter.most_common()],

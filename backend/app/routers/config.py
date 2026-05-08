@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
+from datetime import datetime
 import io
 import json
 import zipfile
@@ -9,7 +10,18 @@ import zipfile
 from app.core.config import get_settings
 from app.services.crud import get_or_create_default_user, update_config
 from app.db.session import get_db, engine
-from app.models import User, Task, Hashtag, TrainingSession, Flashcard, Base, session_hashtags, flashcard_hashtags
+from app.models import (
+    User,
+    Task,
+    Hashtag,
+    TrainingSession,
+    Flashcard,
+    DailyWordSet,
+    DailyWordEntry,
+    Base,
+    session_hashtags,
+    flashcard_hashtags,
+)
 from app.schemas import ConfigResponse, ConfigUpdate
 
 router = APIRouter(prefix="/api", tags=["config"])
@@ -61,6 +73,8 @@ def export_backup(db: Session = Depends(get_db)):
     hashtags = db.query(Hashtag).all()
     sessions = db.query(TrainingSession).all()
     flashcards = db.query(Flashcard).all()
+    daily_word_sets = db.query(DailyWordSet).all()
+    daily_word_entries = db.query(DailyWordEntry).all()
 
     def user_to_dict(u: User):
         return {
@@ -112,6 +126,30 @@ def export_backup(db: Session = Depends(get_db)):
         "hashtags": [hashtag_to_dict(h) for h in hashtags],
         "sessions": [session_to_dict(s) for s in sessions],
         "flashcards": [flashcard_to_dict(f) for f in flashcards],
+        "daily_word_sets": [
+            {
+                "id": item.id,
+                "user_id": item.user_id,
+                "practice_date": item.practice_date,
+                "submitted_at": item.submitted_at.isoformat() if item.submitted_at else None,
+            }
+            for item in daily_word_sets
+        ],
+        "daily_word_entries": [
+            {
+                "id": item.id,
+                "word_set_id": item.word_set_id,
+                "position": item.position,
+                "word": item.word,
+                "meaning": item.meaning,
+                "usage_example": item.usage_example,
+                "user_sentence": item.user_sentence,
+                "feedback": item.feedback,
+                "improved_sentence": item.improved_sentence,
+                "is_correct": item.is_correct,
+            }
+            for item in daily_word_entries
+        ],
     }
 
     # build zip in memory
@@ -198,6 +236,34 @@ def import_backup(file: UploadFile = File(...), db: Session = Depends(get_db)):
                     session_id=f.get("session_id"),
                     front=f.get("front"),
                     back=f.get("back"),
+                )
+            )
+
+        for item in payload.get("daily_word_sets", []):
+            submitted_at_raw = item.get("submitted_at")
+            submitted_at = datetime.fromisoformat(submitted_at_raw) if submitted_at_raw else None
+            conn.execute(
+                DailyWordSet.__table__.insert().values(
+                    id=item.get("id"),
+                    user_id=item.get("user_id"),
+                    practice_date=item.get("practice_date"),
+                    submitted_at=submitted_at,
+                )
+            )
+
+        for item in payload.get("daily_word_entries", []):
+            conn.execute(
+                DailyWordEntry.__table__.insert().values(
+                    id=item.get("id"),
+                    word_set_id=item.get("word_set_id"),
+                    position=item.get("position"),
+                    word=item.get("word"),
+                    meaning=item.get("meaning"),
+                    usage_example=item.get("usage_example"),
+                    user_sentence=item.get("user_sentence"),
+                    feedback=item.get("feedback"),
+                    improved_sentence=item.get("improved_sentence"),
+                    is_correct=item.get("is_correct"),
                 )
             )
 

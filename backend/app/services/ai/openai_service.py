@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from openai import OpenAI
 
 from app.core.config import get_settings
 from app.services.ai.base import AIService
-from app.services.ai.prompts import SYSTEM_PROMPT
-from app.services.ai.utils import parse_markdown_response
+from app.services.ai.prompts import DAILY_WORDS_EVALUATION_PROMPT, DAILY_WORDS_GENERATION_PROMPT, SYSTEM_PROMPT
+from app.services.ai.utils import parse_json_payload, parse_markdown_response
 
 
 class OpenAIService(AIService):
@@ -53,3 +54,31 @@ class OpenAIService(AIService):
 
         response_text = completion.choices[0].message.content or ""
         return parse_markdown_response(response_text)
+
+    def _json_completion(self, system_prompt: str, user_prompt: str) -> dict:
+        completion = self.client.chat.completions.create(
+            model=self.settings.openai_model,
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        content = completion.choices[0].message.content or "{}"
+        return parse_json_payload(content)
+
+    def generate_daily_words(self) -> list[dict]:
+        payload = self._json_completion(
+            DAILY_WORDS_GENERATION_PROMPT,
+            "Generate today's 10 mixed-topic daily conversation words.",
+        )
+        words = payload.get("words", []) if isinstance(payload, dict) else []
+        return [item for item in words if isinstance(item, dict)]
+
+    def evaluate_daily_word_sentences(self, items: list[dict]) -> list[dict]:
+        payload = self._json_completion(
+            DAILY_WORDS_EVALUATION_PROMPT,
+            f"Evaluate this JSON list:\n{json.dumps(items, ensure_ascii=False)}",
+        )
+        results = payload.get("results", []) if isinstance(payload, dict) else []
+        return [item for item in results if isinstance(item, dict)]

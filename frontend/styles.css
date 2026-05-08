@@ -43,7 +43,6 @@ body {
 }
 
 .eyebrow {
-  margin: 0 0 8px;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 12px;
@@ -60,7 +59,7 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
 
 .hero-stats {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .hero-stats div, .pill, .panel, .calendar-card, .analytics-card, .flashcard {
@@ -69,11 +68,83 @@ h1 { font-size: clamp(2.5rem, 5vw, 3.6rem); line-height: 0.95; margin: 0; }
   box-shadow: var(--shadow);
 }
 
-.hero-stats div {
+.hero-stat-card {
   padding: 16px;
   border-radius: var(--corner);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, 0.05) 50%, transparent 75%);
+  transform: translateX(-120%);
+  transition: transform 600ms ease;
+  pointer-events: none;
+}
+
+.hero-stat-card:hover::before {
+  transform: translateX(120%);
+}
+
+.hero-stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-stat-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 255, 136, 0.12);
+  border: 1px solid rgba(0, 255, 136, 0.22);
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.2);
+  font-size: 13px;
+}
+
+.hero-stat-card strong {
+  font-size: 1.02rem;
+}
+
+.streak-card {
+  border-color: rgba(255, 146, 61, 0.38);
+  background: linear-gradient(140deg, rgba(37, 20, 10, 0.72), rgba(12, 10, 7, 0.95));
+}
+
+.streak-card .hero-stat-icon {
+  background: rgba(255, 150, 69, 0.14);
+  border-color: rgba(255, 146, 61, 0.34);
+  box-shadow: 0 0 12px rgba(255, 146, 61, 0.3);
+}
+
+.flame-icon {
+  animation: flamePulse 1500ms ease-in-out infinite;
+}
+
+.streak-current strong {
+  color: #ffc078;
+  text-shadow: 0 0 10px rgba(255, 156, 84, 0.5);
+}
+
+.streak-max strong {
+  color: #ffd36f;
+  text-shadow: 0 0 12px rgba(255, 184, 81, 0.55);
+}
+
+@keyframes flamePulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255, 139, 56, 0.1)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 7px rgba(255, 149, 70, 0.5)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255, 139, 56, 0.1)); }
 }
 
 .hero-stats span, .hint { color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; }
@@ -310,7 +381,7 @@ input.input-error, textarea.input-error, select.input-error {
   border-color: rgba(255, 100, 100, 0.6);
   box-shadow: 0 0 0 3px rgba(255, 100, 100, 0.08);
 }
-textarea { resize: vertical; min-height: 220px; }
+textarea { resize: vertical;}
 
 .mode-toggle { display: flex; gap: 8px; }
 .mode-body { margin-top: 4px; }
@@ -394,6 +465,158 @@ textarea { resize: vertical; min-height: 220px; }
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
+}
+
+.daily-words-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.daily-words-info {
+  margin: 8px 0 4px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  font-style: italic;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.daily-word-card {
+  border-radius: 12px;
+  padding: 16px;
+  background: rgba(8, 12, 10, 0.94);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.daily-word-card.correct {
+  border-color: rgba(69, 207, 129, 0.45);
+}
+
+.daily-word-card.incorrect {
+  border-color: rgba(255, 110, 110, 0.42);
+}
+
+.daily-word-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.daily-word-status {
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+}
+
+.daily-word-status.pending {
+  color: #d4e3dc;
+  border-color: rgba(142, 163, 154, 0.4);
+  background: rgba(142, 163, 154, 0.12);
+}
+
+.daily-word-status.correct {
+  color: #5bf2a5;
+  border-color: rgba(91, 242, 165, 0.38);
+  background: rgba(38, 162, 104, 0.18);
+}
+
+.daily-word-status.incorrect {
+  color: #ff9f9f;
+  border-color: rgba(255, 125, 125, 0.38);
+  background: rgba(196, 74, 74, 0.15);
+}
+
+.daily-word-feedback {
+  margin-top: 8px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 255, 136, 0.14);
+  background: rgba(5, 8, 7, 0.92);
+}
+
+.daily-word-feedback p,
+.daily-word-feedback ul,
+.daily-word-feedback ol {
+  margin: 0;
+}
+
+.daily-word-card.needs-answer textarea,
+.daily-word-card textarea.input-empty {
+  border-color: rgba(255, 92, 92, 0.72);
+  box-shadow: 0 0 0 3px rgba(255, 92, 92, 0.08);
+  animation: emptyPulse 1.8s ease-in-out infinite;
+}
+
+.daily-word-card.has-answer textarea,
+.daily-word-card textarea.input-filled {
+  border-color: rgba(0, 255, 136, 0.26);
+  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.06);
+  animation: none;
+}
+
+.daily-word-card textarea:focus {
+  border-color: rgba(0, 255, 136, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.12);
+}
+
+@keyframes emptyPulse {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(1px); }
+}
+
+.app-toast {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  z-index: 3000;
+  min-width: 240px;
+  max-width: min(420px, calc(100vw - 44px));
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  background: rgba(5, 8, 7, 0.96);
+  color: var(--ink);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  display: block;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+}
+
+.app-toast.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.app-toast.pending {
+  border-color: rgba(255, 208, 92, 0.4);
+  box-shadow: 0 18px 40px rgba(255, 208, 92, 0.08);
+}
+
+.app-toast.processing {
+  border-color: rgba(32, 217, 127, 0.42);
+}
+
+.app-toast.done {
+  border-color: rgba(69, 207, 129, 0.46);
+  color: #bff6d8;
+}
+
+.app-toast.error {
+  border-color: rgba(255, 110, 110, 0.48);
+  color: #ffd3d3;
 }
 
 .task-grid {

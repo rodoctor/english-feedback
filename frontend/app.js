@@ -470,10 +470,10 @@ const renderReport = (report) => {
         </summary>
         <div class="session-body">
           ${item.entries.map((entry) => `
-            <article class="daily-word-report-item ${entry.is_correct ? 'correct' : 'incorrect'}">
+            <article class="daily-word-report-item ${entry.is_correct ? 'correct' : (entry.is_correct === false ? 'incorrect' : 'pending')}">
               <div class="daily-word-head">
                 <strong>${escapeHtml(entry.word)}</strong>
-                <span class="daily-word-status ${entry.is_correct ? 'correct' : 'incorrect'}">${entry.is_correct ? 'Correct' : (entry.is_correct === false ? 'Needs fix' : 'Pending')}</span>
+                <span class="daily-word-status ${entry.is_correct ? 'correct' : (entry.is_correct === false ? 'incorrect' : 'pending')}">${entry.is_correct ? 'Correct' : (entry.is_correct === false ? 'Needs fix' : 'Pending')}</span>
               </div>
               <p><strong>My phrase:</strong> ${escapeHtml(entry.user_sentence || '-')}</p>
               <p><strong>Improvement:</strong> ${escapeHtml(entry.improved_sentence || '-')}</p>
@@ -584,7 +584,7 @@ const renderDailyWordsDictionary = (payload) => {
         ${item.entries.map((entry) => `
           <div class="daily-word-mini-item">
             <strong>${escapeHtml(entry.word)}</strong>
-            <span>${escapeHtml(entry.meaning)}</span>
+            <span>Meaning in English: ${escapeHtml(entry.meaning)}</span>
             <small>${escapeHtml(entry.usage_example)}</small>
           </div>
         `).join('')}

@@ -185,7 +185,7 @@ Return this JSON shape:
     "words": [
         {
             "word": "...",
-            "meaning": "Simple meaning in Portuguese",
+            "meaning": "Simple meaning in English",
             "usage_example": "One natural English sentence using the word"
         }
     ]

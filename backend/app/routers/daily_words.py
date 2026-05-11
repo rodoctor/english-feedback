@@ -25,16 +25,16 @@ from app.services.crud import (
 router = APIRouter(prefix="/api/daily-words", tags=["daily-words"])
 
 _FALLBACK_WORDS = [
-    {"word": "budget", "meaning": "orcamento", "usage_example": "We need to plan the trip within our budget."},
-    {"word": "delay", "meaning": "atraso", "usage_example": "There was a delay in my flight this morning."},
-    {"word": "reliable", "meaning": "confiavel", "usage_example": "This app is reliable for daily planning."},
-    {"word": "schedule", "meaning": "agenda", "usage_example": "My schedule is full this week."},
-    {"word": "improve", "meaning": "melhorar", "usage_example": "I want to improve my English this month."},
-    {"word": "update", "meaning": "atualizacao", "usage_example": "Please send me an update after the meeting."},
-    {"word": "book", "meaning": "reservar", "usage_example": "I need to book a hotel for the weekend."},
-    {"word": "issue", "meaning": "problema", "usage_example": "We found an issue in the login flow."},
-    {"word": "nearby", "meaning": "perto", "usage_example": "Is there a pharmacy nearby?"},
-    {"word": "feature", "meaning": "funcionalidade", "usage_example": "This feature makes the app easier to use."},
+    {"word": "budget", "meaning": "available money or spending limit", "usage_example": "We need to plan the trip within our budget."},
+    {"word": "delay", "meaning": "something happening later than expected", "usage_example": "There was a delay in my flight this morning."},
+    {"word": "reliable", "meaning": "able to be trusted or depended on", "usage_example": "This app is reliable for daily planning."},
+    {"word": "schedule", "meaning": "a plan of times and activities", "usage_example": "My schedule is full this week."},
+    {"word": "improve", "meaning": "to make better", "usage_example": "I want to improve my English this month."},
+    {"word": "update", "meaning": "new information or a new version", "usage_example": "Please send me an update after the meeting."},
+    {"word": "book", "meaning": "to reserve or arrange in advance", "usage_example": "I need to book a hotel for the weekend."},
+    {"word": "issue", "meaning": "a problem or concern", "usage_example": "We found an issue in the login flow."},
+    {"word": "nearby", "meaning": "close to a place", "usage_example": "Is there a pharmacy nearby?"},
+    {"word": "feature", "meaning": "a useful part of a product or service", "usage_example": "This feature makes the app easier to use."},
 ]
 
 

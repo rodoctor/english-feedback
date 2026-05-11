@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.models import DailyWordSet
 from app.schemas import DailyWordsDictionaryItem, ReportAnalytics, ReportCalendar, ReportResponse, TrainingResponse
 from app.db.session import get_db
+from app.services.ai.utils import build_markdown_response
 from app.services.crud import build_analytics, build_report_calendar, build_task_groups, get_or_create_default_user, list_training_sessions, list_unique_hashtags
 
 router = APIRouter(prefix="/api", tags=["report"])

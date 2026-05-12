@@ -179,8 +179,9 @@
       <section class="panel" id="dictionaryPanel">
         <div class="section-head">
           <h3>Dictionary</h3>
-          <span class="hint">Words, meanings, and examples</span>
+          <span class="hint">Alphabetical word list</span>
         </div>
+        <div class="dictionary-alphabet-tabs" id="dictionaryAlphabetTabs"></div>
         <div id="dailyWordsDictionary" class="daily-words-list">No daily words history yet.</div>
       </section>
 
@@ -284,6 +285,16 @@
         <button id="modalCloseBtn" class="secondary compact">Close</button>
       </div>
       <div id="modalContent" class="modal-content"></div>
+    </div>
+  </div>
+  <div id="dictionaryWordModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-backdrop" id="dictionaryWordBackdrop"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <strong id="dictionaryWordTitle">Word</strong>
+        <button id="dictionaryWordCloseBtn" class="secondary compact">Close</button>
+      </div>
+      <div id="dictionaryWordContent" class="modal-content"></div>
     </div>
   </div>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>

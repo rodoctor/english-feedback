@@ -12,6 +12,7 @@ const state = {
   editingTaskId: null,
   dailyWords: null,
   dailyWordsLoadedDate: null,
+  dictionaryEntries: [],
 };
 
 const ensureToast = () => {
@@ -571,26 +572,105 @@ const renderDailyWordsDictionary = (payload) => {
   const items = payload?.items || [];
   if (!items.length) {
     el('dailyWordsDictionary').innerHTML = 'No daily words history yet.';
+    el('dictionaryAlphabetTabs').innerHTML = '';
+    state.dictionaryEntries = [];
     return;
   }
 
-  el('dailyWordsDictionary').innerHTML = items.map((item) => `
-    <article class="daily-word-card ${item.submitted ? 'correct' : 'pending'}">
-      <div class="daily-word-head">
-        <strong>${item.entries.length} words</strong>
-        <span class="daily-word-status ${item.submitted ? 'correct' : 'pending'}">${item.submitted ? 'Available' : 'Pending'}</span>
-      </div>
-      <div class="daily-word-mini-list">
-        ${item.entries.map((entry) => `
-          <div class="daily-word-mini-item">
-            <strong>${escapeHtml(entry.word)}</strong>
-            <span>Meaning in English: ${escapeHtml(entry.meaning)}</span>
-            <small>${escapeHtml(entry.usage_example)}</small>
-          </div>
-        `).join('')}
-      </div>
-    </article>
+  const flattened = [];
+  const seen = new Set();
+  items.forEach((item) => {
+    (item.entries || []).forEach((entry) => {
+      const key = String(entry.word || '').trim().toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      flattened.push({
+        ...entry,
+        practice_date: item.practice_date,
+        submitted: item.submitted,
+      });
+    });
+  });
+
+  state.dictionaryEntries = flattened.sort((left, right) => left.word.localeCompare(right.word, undefined, { sensitivity: 'base' }));
+
+  // Group by first letter
+  const grouped = {};
+  state.dictionaryEntries.forEach((entry) => {
+    const letter = (entry.word || '').charAt(0).toUpperCase();
+    if (!grouped[letter]) grouped[letter] = [];
+    grouped[letter].push(entry);
+  });
+
+  const letters = Object.keys(grouped).sort();
+
+  // Render alphabet tabs
+  el('dictionaryAlphabetTabs').innerHTML = letters.map((letter, idx) => `
+    <button class="dictionary-letter-tab ${idx === 0 ? 'active' : ''}" data-letter="${letter}" type="button">
+      ${letter}
+    </button>
   `).join('');
+
+  // Render grid with first letter's words
+  const renderLetterWords = (letter) => {
+    const words = grouped[letter] || [];
+    el('dailyWordsDictionary').innerHTML = words.map((entry, index) => `
+      <button class="dictionary-row" type="button" data-word="${escapeHtml(entry.word)}">
+        <span class="dictionary-row-word">${escapeHtml(entry.word)}</span>
+        <span class="dictionary-row-meaning">${escapeHtml(entry.meaning)}</span>
+      </button>
+    `).join('');
+
+    el('dailyWordsDictionary').querySelectorAll('.dictionary-row').forEach((button) => {
+      button.addEventListener('click', () => {
+        const word = button.getAttribute('data-word');
+        const entry = state.dictionaryEntries.find((e) => e.word === word);
+        if (entry) openDictionaryWordModal(entry);
+      });
+    });
+  };
+
+  // Initial render with first letter
+  renderLetterWords(letters[0]);
+
+  // Handle letter tab clicks
+  el('dictionaryAlphabetTabs').querySelectorAll('.dictionary-letter-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const letter = tab.getAttribute('data-letter');
+      el('dictionaryAlphabetTabs').querySelectorAll('.dictionary-letter-tab').forEach((t) => {
+        t.classList.toggle('active', t.getAttribute('data-letter') === letter);
+      });
+      renderLetterWords(letter);
+    });
+  });
+};
+
+const openDictionaryWordModal = (entry) => {
+  const modal = elOrNull('dictionaryWordModal');
+  const title = elOrNull('dictionaryWordTitle');
+  const content = elOrNull('dictionaryWordContent');
+  const closeBtn = elOrNull('dictionaryWordCloseBtn');
+  const backdrop = elOrNull('dictionaryWordBackdrop');
+  if (!modal || !title || !content || !closeBtn) return;
+
+  title.textContent = entry.word;
+  content.innerHTML = `
+    <div class="dictionary-modal-word">${escapeHtml(entry.word)}</div>
+    <p><strong>Meaning in English:</strong> ${escapeHtml(entry.meaning)}</p>
+    <p><strong>Example:</strong> ${escapeHtml(entry.usage_example)}</p>
+  `;
+
+  modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden', 'false');
+  closeBtn.onclick = () => closeDictionaryWordModal();
+  if (backdrop) backdrop.onclick = () => closeDictionaryWordModal();
+};
+
+const closeDictionaryWordModal = () => {
+  const modal = elOrNull('dictionaryWordModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.setAttribute('aria-hidden', 'true');
 };
 
 const openDictionaryTab = async () => {

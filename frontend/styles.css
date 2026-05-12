@@ -890,7 +890,19 @@ textarea { resize: vertical;}
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
 }
+
+.calendar-cell.is-today {
+  border: 2px solid rgba(0, 255, 136, 0.6);
+  background: rgba(0, 255, 136, 0.08);
+  box-shadow: 0 0 16px rgba(0, 255, 136, 0.2);
+}
+
+.calendar-cell.is-today strong {
+  color: #5bf2a5;
+}
+
 .calendar-cell.has-study::after {
   content: '';
   width: 10px;

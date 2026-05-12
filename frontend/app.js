@@ -395,9 +395,13 @@ const renderReport = (report) => {
   const label = month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   el('calendarLabel').textContent = label;
 
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === month.getFullYear() && today.getMonth() === month.getMonth();
+  const currentDay = isCurrentMonth ? today.getDate() : null;
+
   const days = report.calendar?.days || [];
   el('calendarGrid').innerHTML = days.map((day) => `
-    <div class="calendar-cell ${day.has_study ? 'has-study' : ''}" data-day="${String(day.day).padStart(2,'0')}">
+    <div class="calendar-cell ${day.has_study ? 'has-study' : ''} ${day.day === currentDay ? 'is-today' : ''}" data-day="${String(day.day).padStart(2,'0')}">
       <strong>${day.day}</strong>
       <small class="hint">${day.weekday}</small>
     </div>

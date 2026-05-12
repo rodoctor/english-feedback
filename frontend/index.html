@@ -181,6 +181,17 @@
           <h3>Dictionary</h3>
           <span class="hint">Alphabetical word list</span>
         </div>
+        <div class="dictionary-search">
+          <label class="field dictionary-search-input">
+            <span>Search a word</span>
+            <input id="dictionarySearchInput" type="search" placeholder="Type an English word" autocomplete="off" />
+          </label>
+          <div class="dictionary-search-actions">
+            <button id="dictionarySearchBtn" class="secondary" type="button">Search</button>
+            <button id="dictionarySearchClearBtn" class="secondary" type="button">Clear</button>
+          </div>
+        </div>
+        <p id="dictionarySearchHint" class="daily-words-info">Search a word from your dictionary or look up a new English word.</p>
         <div class="dictionary-alphabet-tabs" id="dictionaryAlphabetTabs"></div>
         <div id="dailyWordsDictionary" class="daily-words-list">No daily words history yet.</div>
       </section>
@@ -297,7 +308,25 @@
       <div id="dictionaryWordContent" class="modal-content"></div>
     </div>
   </div>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script src="app.js?v=20260508-2"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  
+  <!-- Modular Architecture: Load in dependency order -->
+  <!-- 1. Utils (no dependencies) -->
+  <script src="modules/utils.js?v=20260512"></script>
+  
+  <!-- 2. State Management (no dependencies) -->
+  <script src="modules/state.js?v=20260512"></script>
+  
+  <!-- 3. API Layer (no dependencies) -->
+  <script src="modules/api.js?v=20260512"></script>
+  
+  <!-- 4. Feature Renderers (depend on Utils, State, API) -->
+  <script src="modules/renderers/tasks.js?v=20260512"></script>
+  <script src="modules/renderers/flashcards.js?v=20260512"></script>
+  <script src="modules/renderers/report.js?v=20260512"></script>
+  <script src="modules/renderers/daily-words.js?v=20260512"></script>
+  
+  <!-- 5. Main Application (depends on all modules) -->
+  <script src="app.js?v=20260512"></script>
 </body>
 </html>

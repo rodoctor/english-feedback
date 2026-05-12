@@ -193,6 +193,31 @@ Return this JSON shape:
 """
 
 
+DAILY_WORDS_LOOKUP_PROMPT = """
+You are an English vocabulary assistant.
+
+You will receive one candidate word.
+
+Rules:
+- Determine whether it is a valid English word.
+- If it is not an English word, return valid JSON only with this shape:
+{
+    "is_english": false,
+    "error": "This is not an English word."
+}
+- If it is an English word, return valid JSON only with this shape:
+{
+    "is_english": true,
+    "word": "...",
+    "meaning": "Simple meaning in English",
+    "usage_example": "One natural English sentence using the word"
+}
+- Use concise, natural English.
+- Do not include markdown or explanations.
+- Do not change the word unless you need to normalize capitalization.
+"""
+
+
 DAILY_WORDS_EVALUATION_PROMPT = """
 You are an English teacher evaluating vocabulary usage.
 

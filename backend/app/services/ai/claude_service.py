@@ -7,7 +7,7 @@ from anthropic import Anthropic
 
 from app.core.config import get_settings
 from app.services.ai.base import AIService
-from app.services.ai.prompts import DAILY_WORDS_EVALUATION_PROMPT, DAILY_WORDS_GENERATION_PROMPT, SYSTEM_PROMPT
+from app.services.ai.prompts import DAILY_WORDS_EVALUATION_PROMPT, DAILY_WORDS_GENERATION_PROMPT, DAILY_WORDS_LOOKUP_PROMPT, SYSTEM_PROMPT
 from app.services.ai.utils import parse_json_payload, parse_markdown_response
 
 
@@ -61,6 +61,13 @@ class ClaudeService(AIService):
         )
         words = payload.get("words", []) if isinstance(payload, dict) else []
         return [item for item in words if isinstance(item, dict)]
+
+    def lookup_daily_word(self, word: str) -> dict:
+        payload = self._json_completion(
+            DAILY_WORDS_LOOKUP_PROMPT,
+            f"Look up this word: {word}",
+        )
+        return payload if isinstance(payload, dict) else {}
 
     def evaluate_daily_word_sentences(self, items: list[dict]) -> list[dict]:
         payload = self._json_completion(

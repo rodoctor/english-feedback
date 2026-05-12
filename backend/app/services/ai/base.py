@@ -18,5 +18,9 @@ class AIService(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def lookup_daily_word(self, word: str) -> dict:
+        raise NotImplementedError
+
+    @abstractmethod
     def evaluate_daily_word_sentences(self, items: list[dict]) -> list[dict]:
         raise NotImplementedError

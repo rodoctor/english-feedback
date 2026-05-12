@@ -495,6 +495,41 @@ textarea { resize: vertical;}
   border-bottom: 1px solid var(--line);
 }
 
+.dictionary-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 10px;
+}
+
+.dictionary-search .field {
+  margin-bottom: 0;
+}
+
+.dictionary-search-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dictionary-search-result {
+  display: grid;
+  gap: 12px;
+}
+
+.dictionary-search-result-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 4px 2px 0;
+}
+
+.dictionary-search-result-head strong {
+  font-size: 1.05rem;
+}
+
 .dictionary-letter-tab {
   display: inline-block;
   padding: 6px 12px;

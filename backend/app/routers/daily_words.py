@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.config import get_settings
 from app.db.session import get_db
@@ -23,6 +24,8 @@ from app.services.crud import (
 )
 
 router = APIRouter(prefix="/api/daily-words", tags=["daily-words"])
+_LOOKUP_WORD_PATTERN = re.compile(r"^[A-Za-z][A-Za-z'-]*$")
+_DICTIONARY_SET_DATE = "dictionary"
 
 _FALLBACK_WORDS = [
     {"word": "budget", "meaning": "available money or spending limit", "usage_example": "We need to plan the trip within our budget."},
@@ -106,6 +109,67 @@ def _fetch_set_for_day(db: Session, user_id: int, practice_date: str) -> DailyWo
         .where(DailyWordSet.user_id == user_id, DailyWordSet.practice_date == practice_date)
         .options(selectinload(DailyWordSet.entries))
     )
+
+
+def _load_dictionary_sets(db: Session, user_id: int) -> list[DailyWordSet]:
+    return list(
+        db.scalars(
+            select(DailyWordSet)
+            .where(DailyWordSet.user_id == user_id)
+            .order_by(DailyWordSet.practice_date.desc())
+            .options(selectinload(DailyWordSet.entries))
+        ).all()
+    )
+
+
+def _get_dictionary_set(db: Session, user_id: int) -> DailyWordSet | None:
+    return db.scalar(
+        select(DailyWordSet)
+        .where(DailyWordSet.user_id == user_id, DailyWordSet.practice_date == _DICTIONARY_SET_DATE)
+        .options(selectinload(DailyWordSet.entries))
+    )
+
+
+def _find_dictionary_entry(sets: list[DailyWordSet], word: str) -> DailyWordEntry | None:
+    normalized = word.strip().lower()
+    if not normalized:
+        return None
+
+    for word_set in sets:
+        for entry in sorted(word_set.entries, key=lambda item: item.position):
+            if entry.word.strip().lower() == normalized:
+                return entry
+    return None
+
+
+def _validate_dictionary_word(word: str) -> str:
+    cleaned = word.strip()
+    if not cleaned:
+        raise HTTPException(status_code=400, detail="Please enter an English word to search.")
+    if not _LOOKUP_WORD_PATTERN.fullmatch(cleaned):
+        raise HTTPException(status_code=400, detail="That does not look like an English word.")
+    return cleaned
+
+
+def _save_dictionary_entry(db: Session, user_id: int, word: str, meaning: str, usage_example: str) -> DailyWordEntry:
+    dictionary_set = _get_dictionary_set(db, user_id)
+    if not dictionary_set:
+        dictionary_set = DailyWordSet(user_id=user_id, practice_date=_DICTIONARY_SET_DATE)
+        db.add(dictionary_set)
+        db.flush()
+
+    next_position = len(dictionary_set.entries) + 1
+    entry = DailyWordEntry(
+        word_set_id=dictionary_set.id,
+        position=next_position,
+        word=word,
+        meaning=meaning,
+        usage_example=usage_example,
+    )
+    db.add(entry)
+    db.flush()
+    db.refresh(entry)
+    return entry
 
 
 @router.post("/today/open", response_model=DailyWordsTodayResponse)
@@ -253,14 +317,7 @@ def read_daily_dictionary(db: Session = Depends(get_db)) -> DailyWordsDictionary
     settings = get_settings()
     user = get_or_create_default_user(db, settings.default_user_email, settings.ai_default_provider)
 
-    sets = list(
-        db.scalars(
-            select(DailyWordSet)
-            .where(DailyWordSet.user_id == user.id)
-            .order_by(DailyWordSet.practice_date.desc())
-            .options(selectinload(DailyWordSet.entries))
-        ).all()
-    )
+    sets = _load_dictionary_sets(db, user.id)
 
     items = [
         DailyWordsDictionaryItem(
@@ -271,3 +328,38 @@ def read_daily_dictionary(db: Session = Depends(get_db)) -> DailyWordsDictionary
         for word_set in sets
     ]
     return DailyWordsDictionaryResponse(items=items)
+
+
+@router.get("/dictionary/search", response_model=DailyWordEntryResponse)
+def search_daily_dictionary(word: str = Query(..., min_length=1), db: Session = Depends(get_db)) -> DailyWordEntryResponse:
+    settings = get_settings()
+    user = get_or_create_default_user(db, settings.default_user_email, settings.ai_default_provider)
+    cleaned_word = _validate_dictionary_word(word)
+
+    sets = _load_dictionary_sets(db, user.id)
+    existing = _find_dictionary_entry(sets, cleaned_word)
+    if existing:
+        return _entry_to_schema(existing)
+
+    try:
+        ai_service = build_ai_service(user)
+        lookup = ai_service.lookup_daily_word(cleaned_word)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not search word: {exc}")
+
+    if not isinstance(lookup, dict):
+        raise HTTPException(status_code=400, detail="Could not search word")
+
+    if lookup.get("is_english") is False:
+        raise HTTPException(status_code=400, detail=str(lookup.get("error") or "This is not an English word."))
+
+    meaning = str(lookup.get("meaning") or "").strip()
+    usage_example = str(lookup.get("usage_example") or "").strip()
+    returned_word = str(lookup.get("word") or cleaned_word).strip() or cleaned_word
+
+    if not meaning or not usage_example:
+        raise HTTPException(status_code=400, detail="Could not generate dictionary entry")
+
+    saved = _save_dictionary_entry(db, user.id, returned_word, meaning, usage_example)
+    db.commit()
+    return _entry_to_schema(saved)

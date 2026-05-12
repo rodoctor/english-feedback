@@ -11,10 +11,10 @@ from app.services.ai.utils import build_markdown_response
 from app.services.crud import build_analytics, build_report_calendar, build_task_groups, get_or_create_default_user, list_training_sessions, list_unique_hashtags
 
 router = APIRouter(prefix="/api", tags=["report"])
+_DICTIONARY_SET_DATE = "dictionary"
 
 
-def _entry_to_schema(entry):
-    return {
+def _entry_to_schema(entry):    return {
         "entry_id": entry.id,
         "position": entry.position,
         "word": entry.word,
@@ -44,6 +44,7 @@ def _daily_words_history(db: Session, user_id: int) -> list[DailyWordsDictionary
             entries=[_entry_to_schema(entry) for entry in sorted(word_set.entries, key=lambda item: item.position)],
         )
         for word_set in sets
+        if word_set.practice_date != _DICTIONARY_SET_DATE
     ]
 
 

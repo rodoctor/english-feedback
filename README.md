@@ -1,117 +1,292 @@
 # English Feedback
 
-English Feedback is a study workspace for practicing English writing and speaking with AI-assisted corrections.
+> **Learn English with AI-powered feedback on your writing and speaking**
 
-It is designed to help you organize study goals, submit practice sessions as text or audio, review corrections, and track progress over time through reports, flashcards, and task-based analytics.
+[![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-blue)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)](https://www.docker.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)](https://www.postgresql.org/)
 
-## What the app does
+English Feedback is a study workspace for practicing English through structured tasks, real-time AI feedback, and progress tracking. Submit practice sessions in text or audio, get detailed corrections, and build a personalized learning dashboard.
 
-- Create study tasks and group practice sessions under each task.
-- Submit a practice session in text or audio mode.
-- Select the task before submitting, so every session is tied to a learning goal.
-- Review AI feedback in a readable result panel.
-- Turn corrections into flashcards for spaced review.
-- Browse study history in a calendar-based report.
-- Track task activity, study streaks, hashtags, spoken minutes, and top topics.
-- Configure the AI provider from the app without exposing keys in the browser.
+## Core Features
 
-## Main features
+### Study Organization
+- **Tasks**: Create learning goals and organize practice sessions by topic
+- **Tasks Dashboard**: Visual indicators for text sessions, audio sessions, and study-day streaks
+- **Quick Stats**: Cards showing flashcard count, study days, and current/max streaks
 
-### Tasks
+### Practice Modes
+- **Text Input**: Write practice content directly
+- **Audio Recording**: Record speech in-browser and auto-transcribe
+- **AI Analysis**: Get detailed feedback from OpenAI (GPT-4) or Claude 3 Opus
+- **Result Display**: Read corrections in a clean, formatted panel
 
-- Create, edit, list, and delete tasks.
-- Group all practice sessions by task.
-- See quick visual indicators for text sessions, audio sessions, and study-day activity.
-
-### Practice
-
-- Switch between text and audio input.
-- Record audio directly in the browser.
-- Compress audio before transcription in the backend.
-- Lock the submit flow after a session is sent, then start a new one with the `New` action.
+### Learning Insights
+- **Calendar View**: See study activity by month, with indicators for each day
+- **Task Reports**: Group sessions by task with activity dates, notes, and audio references
+- **Analytics**: Track study streaks, most-used hashtags, spoken minutes, and top topics
+- **Charts**: Interactive bar charts showing your 10 most studied topics
 
 ### Flashcards
+- **Auto-generated**: AI creates flashcards from practice feedback
+- **Smart Filtering**: Find cards by task or hashtag
+- **Review Mode**: Flip cards and track progress
 
-- Review generated flashcards.
-- Filter flashcards by task or hashtag.
-- Flip cards in place and remove items when needed.
+### Daily Words
+- **Daily Exercise**: Get 10 random English words each day
+- **Sentence Practice**: Write a sentence for each word
+- **AI Evaluation**: Get feedback on grammar and word usage
+- **Personal Dictionary**: Search and save words from a growing personal dictionary
+- **Alphabet Tabs**: Browse your vocabulary organized by letter
 
-### Reports
+### Data Management
+- **Backup & Restore**: Export your complete study data (including audio) as ZIP
+- **Provider Switch**: Change between OpenAI and Claude without re-entering data
+- **Server-side Storage**: API keys never leave the backend
 
-- Browse activity by month in a calendar view.
-- Open a day to see the sessions submitted on that date.
-- View task summaries with dates, notes, audio references, and spoken time.
-- See analytics including study streak, most used hashtags, sessions per task, and the most active task.
-- View a Plotly bar chart for the 10 most studied topics with a neon-style presentation.
+---
 
-## Tech stack
+## Quick Start
 
-- Frontend: HTML, CSS, Vanilla JavaScript
-- Backend: FastAPI
-- Database: PostgreSQL
-- Infra: Docker and Docker Compose
-- Audio processing: ffmpeg and ffprobe inside the backend container
+### Prerequisites
+- Docker and Docker Compose (v2.0+)
+- 2GB RAM available
+- Port 8080 (frontend), 8000 (backend), 5433 (database) available
 
-## Project structure
+### Installation
 
-- `frontend/` - single-page UI, styles, and client-side interactions
-- `backend/` - FastAPI application, database models, services, and API routers
-- `database/` - SQL schema and bootstrap data
-- `docker/` - container-related documentation and support files
+1. **Clone and navigate to the project:**
+   ```bash
+   git clone <repo-url>
+   cd english-feedback
+   ```
 
-## How it works
+2. **Start all services:**
+   ```bash
+   docker compose up --build
+   ```
 
-1. Create one or more tasks from the `Tasks` tab.
-2. Go to `Practice`, choose a task, and submit either text or audio.
-3. The backend sends the content to the selected AI provider and stores the result.
-4. Generated corrections can be reviewed as flashcards.
-5. The `Report` tab shows study history, task summaries, chart data, and session details.
+3. **Access the app:**
+   - **Frontend**: http://localhost:8080
+   - **Backend Health**: http://localhost:8000/health
+   - **API Docs**: http://localhost:8000/docs
 
-## Run with Docker
+4. **Configure AI provider:**
+   - Open the **Config** tab
+   - Select provider (OpenAI or Claude)
+   - Enter your API key (stored securely on the backend)
 
-Start the full stack with Docker Compose:
+### First Steps
 
-```bash
-docker compose up --build
+1. **Create a Task**: Go to Tasks tab → enter title and description → "Add Task"
+2. **Submit Practice**: Go to Practice tab → select task → enter text or record audio → Submit
+3. **Review Feedback**: Results appear in the Result panel
+4. **Check Report**: Go to Report tab to see calendar, analytics, and task summaries
+
+---
+
+## Architecture
+
+### Frontend (Modular JavaScript)
+- **modules/state.js** - Centralized state management
+- **modules/api.js** - HTTP client with all backend calls
+- **modules/utils.js** - Shared utilities and DOM helpers
+- **modules/renderers/** - Feature-specific UI logic (tasks, practice, flashcards, etc.)
+- **app.js** - Application orchestrator
+
+### Backend (FastAPI + PostgreSQL)
+- **routers/** - API endpoints for tasks, practice, flashcards, daily words, reports
+- **services/ai/** - AI service abstraction (OpenAI, Claude, factory pattern)
+- **models.py** - SQLAlchemy database models
+- **schemas.py** - Pydantic request/response schemas
+
+### Database
+- **Users**: Account and provider configuration
+- **Tasks**: Learning goals
+- **TrainingSessions**: Practice submissions with AI feedback
+- **Flashcards**: Generated study cards
+- **DailyWordSets** & **DailyWordEntries**: Daily vocabulary exercises
+- **Hashtags**: Tags for organizing sessions and flashcards
+
+---
+
+## Development
+
+### Project Structure
+```
+english-feedback/
+├── frontend/              # HTML, CSS, modular JS
+│   ├── modules/          # Modular component files
+│   ├── app.js           # Main orchestrator
+│   ├── index.html       # Single-page app
+│   └── styles.css       # Neon dark theme
+├── backend/              # FastAPI server
+│   ├── app/
+│   │   ├── routers/     # API endpoints
+│   │   ├── services/    # Business logic & AI
+│   │   ├── models.py    # Database schemas
+│   │   └── main.py      # FastAPI setup
+│   └── requirements.txt  # Python dependencies
+├── database/             # Database initialization
+└── docker/              # Container support files
 ```
 
-Open the app after the containers start:
+### Rebuild After Changes
 
-- Frontend: http://localhost:8080
-- Backend health: http://localhost:8000/health
-- PostgreSQL: localhost:5433
+```bash
+# Rebuild one service
+docker compose build frontend
+
+# Rebuild everything
+docker compose build
+
+# Restart with new images
+docker compose up -d
+```
+
+### View Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+### Database Access
+
+```bash
+# Connect to PostgreSQL
+psql -h localhost -p 5433 -U english_feedback -d english_feedback
+```
+
+---
+
+## Documentation
+
+Detailed documentation is available in:
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design, patterns, and data flow
+- **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** - Database ERD and table descriptions
+- **[AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md)** - Guide for developers working with AI
+- **[MODULAR_REFACTOR.md](MODULAR_REFACTOR.md)** - Frontend refactoring overview
+- **[ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md)** - Visual system diagrams
+
+---
 
 ## Configuration
 
-Use the `Config` tab to store the provider and API key in the backend database.
+### Environment Variables
 
-The API key stays server-side, so it is not exposed in the browser.
-
-### Backup and restore
-
-Use the backup tools in the `Config` tab to export and import your study data.
-
-- Export generates a ZIP with `data.json` plus any uploaded audio files referenced by practice sessions.
-- Import restores the database records and writes the audio files back into `backend/app/static/uploads`.
-- This keeps audio practice history playable after moving data between environments.
-
-## Notes
-
-- The backend uses an AI service abstraction layer, which makes it easier to switch providers.
-- Audio files are stored in a persistent Docker volume.
-- The report data is grouped by task to make study habits easier to compare.
-- A `CHANGELOG.md` file is included at the project root with versioned history from the first iteration.
-
-## Development tips
-
-- If you need to inspect backend logs, run:
+Create a `.env` file in the project root:
 
 ```bash
-docker compose logs -f backend
+# Database
+POSTGRES_DB=english_feedback
+POSTGRES_USER=english_feedback
+POSTGRES_PASSWORD=english_feedback
+
+# Backend
+DATABASE_URL=postgresql+psycopg://english_feedback:english_feedback@postgres:5432/english_feedback
+APP_SECRET_KEY=change-me-in-production
+AI_DEFAULT_PROVIDER=openai
+
+# AI Keys (optional - can be set from Config tab)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-- If you want to rebuild after changes, run:
+### AI Providers
 
-```bash
-docker compose up -d --build frontend backend
-```
+- **OpenAI**: GPT-4 Turbo ($) - Better for detailed analysis
+- **Claude**: Claude 3 Opus ($) - Good balance of cost and quality
+
+You can switch providers anytime from the Config tab.
+
+---
+
+## Troubleshooting
+
+### "Could not connect to database"
+- Ensure PostgreSQL container is running: `docker compose ps`
+- Check database URL in logs: `docker compose logs backend`
+- Wait 10-15 seconds for PostgreSQL to fully start on first run
+
+### "Module is not defined" console error
+- Clear browser cache and hard-refresh (Ctrl+Shift+R / Cmd+Shift+R)
+- Check that all script tags in index.html are loading: open DevTools → Network tab
+
+### Audio recording not working
+- Check browser permissions (allows microphone access)
+- Test in a fresh incognito window
+- Ensure HTTPS or localhost (browsers block audio in insecure contexts)
+
+### No AI feedback appears
+- Verify API key is saved in Config tab
+- Check backend logs for API errors: `docker compose logs backend`
+- Confirm your API key has sufficient credits/balance
+
+### Database migration issues
+- Reset database: go to Config → Danger → "Reset all data"
+- Or manually clear: `docker compose down -v && docker compose up --build`
+
+---
+
+## Status & Roadmap
+
+### Current Version: 2.0 (Modular)
+
+**Completed:**
+- Modular frontend architecture
+- Dictionary search with auto-save
+- Daily vocabulary exercises
+- Audio transcription & processing
+- Backup/restore with audio
+- Task-based organization
+- AI provider abstraction
+- Comprehensive documentation
+
+**Possible Future Enhancements:**
+- TypeScript migration
+- Automated tests
+- Mobile app (React Native)
+- Spaced repetition algorithm
+- Community features (share sessions)
+- Advanced analytics and insights
+- Speech recognition improvements
+
+---
+
+## License
+
+MIT License - see LICENSE file for details
+
+---
+
+## Contributing
+
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes and test locally
+4. Commit with clear messages
+5. Push and open a Pull Request
+
+For architectural questions, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+---
+
+## Support
+
+For issues, questions, or suggestions:
+- Check [CHANGELOG.md](CHANGELOG.md) for recent updates
+- Review [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) for development help
+- Open an issue on the repository
+
+---
+
+**Happy learning!**
